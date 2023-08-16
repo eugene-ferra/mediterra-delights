@@ -1,0 +1,36 @@
+{
+  "name": "mediterra-delights-client",
+  "version": "1.0.0",
+  "description": "Starter structure for frontend development using HTML, SCSS, JS",
+  "scripts": {
+    "start": "concurrently \"gulp start --mode development \" \"onchange \"**/*\" -- prettier --write --ignore-unknown {{changed}}\" ",
+    "build": "gulp build --mode production"
+  },
+  "author": "Eugene Kushnir",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.20.12",
+    "@babel/plugin-transform-modules-commonjs": "^7.21.2",
+    "@babel/preset-env": "^7.20.2",
+    "browser-sync": "^2.27.10",
+    "concurrently": "^8.2.0",
+    "del": "^6.1.1",
+    "eslint": "^8.45.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "esm": "^3.2.25",
+    "gulp": "^4.0.2",
+    "gulp-autoprefixer": "^8.0.0",
+    "gulp-babel": "^8.0.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-imagemin": "^7.1.0",
+    "gulp-newer": "^1.4.0",
+    "gulp-sass": "^5.1.0",
+    "gulp-uglify-es": "^3.0.0",
+    "gulp-webp": "^4.0.1",
+    "onchange": "^7.1.0",
+    "sass": "^1.54.0",
+    "scss-reset": "^1.2.2",
+    "stylelint-processor-html": "^1.0.0",
+    "webpack-stream": "^7.0.0"
+  }
+}

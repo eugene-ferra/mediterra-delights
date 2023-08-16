@@ -1,0 +1,28 @@
+{
+  "name": "mediterra-delights-server",
+  "version": "1.0.0",
+  "description": "MERN stack website for a restraunt",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"nodemon server.js\" \"onchange '**/*' -- prettier --write --ignore-unknown {{changed}}\" ",
+    "watch": "onchange \"**/*\" -- prettier --write --ignore-unknown {{changed}}"
+  },
+  "author": "Eugene kushnir",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0",
+    "eslint": "^8.45.0",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-jsx-a11y": "^6.7.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-react": "^7.33.0",
+    "nodemon": "^3.0.1",
+    "onchange": "^7.1.0"
+  }
+}
