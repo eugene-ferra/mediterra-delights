@@ -1,6 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap');
 @import '../../node_modules/scss-reset/src/scss/_reset.scss';
 @import '../scss/variables/vars';
+@import '../scss/modules/header';
+@import '../scss/modules/navbar.scss';
+@import '../scss/modules/button.scss';
+@import '../scss/modules/logo.scss';
 
 * {
   box-sizing: border-box;
@@ -14,6 +18,10 @@ a {
 body {
   height: 100%;
   font-family: 'Montserrat';
+}
+
+body[data-state='inactive'] {
+  overflow-y: hidden;
 }
 
 .wrapper {

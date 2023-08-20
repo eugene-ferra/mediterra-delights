@@ -1,0 +1,40 @@
+.navbar {
+  &__list {
+    display: flex;
+    gap: 0 22px;
+  }
+  &__item {
+    transition: 0.3s all;
+    position: relative;
+    width: max-content;
+    &::before {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      width: 0;
+      right: 0;
+      left: auto;
+      height: 2px;
+      background-color: $light;
+      border-radius: 12px;
+      transition: 0.3s all;
+    }
+    &:hover {
+      &::before {
+        left: 0;
+        width: 100%;
+        right: auto;
+      }
+    }
+  }
+}
+
+@media (max-width: $l-width) {
+  .navbar {
+    &__list {
+      flex-direction: column;
+      gap: 20px 0;
+      align-items: center;
+    }
+  }
+}
