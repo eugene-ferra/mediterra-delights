@@ -1,0 +1,29 @@
+@mixin textSmallRegular {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 400;
+}
+
+@mixin textSmallLight {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 300;
+}
+
+@mixin textSmallBold {
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+@mixin flexCenter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin flexSpaceBetween {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

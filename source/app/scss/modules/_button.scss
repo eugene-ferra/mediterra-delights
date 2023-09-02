@@ -1,14 +1,10 @@
 .button {
-  padding: 20px 40px;
-  background-color: $accent;
+  @include textSmallBold;
+  @include flexCenter;
   color: $light;
-  border-radius: 12px;
-  font-size: 14px;
-  line-height: 18px;
-  font-weight: 500;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background-color: $accent;
+  padding: 20px 40px;
+  border-radius: $border;
   gap: 10px;
   transition: 0.2s all;
   &:hover {

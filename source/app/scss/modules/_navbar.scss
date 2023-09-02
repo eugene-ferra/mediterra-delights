@@ -4,8 +4,7 @@
     gap: 0 22px;
   }
   &__item {
-    font-size: 14px;
-    line-height: 18px;
+    @include textSmallRegular;
     transition: 0.3s all;
     position: relative;
     width: max-content;
@@ -18,7 +17,7 @@
       left: auto;
       height: 2px;
       background-color: $light;
-      border-radius: 12px;
+      border-radius: $border;
       transition: 0.3s all;
     }
     &:hover {

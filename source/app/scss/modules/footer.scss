@@ -13,12 +13,10 @@
   &__bottom {
     text-align: center;
     color: rgba($light, 0.8);
-    font-size: 14px;
-    line-height: 18px;
+    @include textSmallLight;
   }
   &__blocks {
-    display: flex;
-    justify-content: space-between;
+    @include flexSpaceBetween;
     margin-left: auto;
     gap: 10px 20px;
   }
@@ -28,9 +26,7 @@
   &__block-line {
     display: block;
     color: $light;
-    font-size: 14px;
-    line-height: 18px;
-    font-weight: 300;
+    @include textSmallLight;
   }
 }
 
