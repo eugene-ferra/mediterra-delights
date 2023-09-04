@@ -16,6 +16,16 @@
   font-weight: 500;
 }
 
+@mixin textMediumRegular {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 28px;
+  @media (max-width: $l-width) {
+    font-size: 14px;
+    line-height: 22px;
+  }
+}
+
 @mixin flexCenter {
   display: flex;
   justify-content: center;
