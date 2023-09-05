@@ -1,0 +1,37 @@
+.head-block {
+  @include flexSpaceBetween;
+  gap: 0 20px;
+  color: $light;
+  &__title {
+    font-size: 24px;
+    line-height: 36px;
+    text-transform: uppercase;
+    font-weight: 700;
+    position: relative;
+    width: max-content;
+    &::before {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 80%;
+      height: 2px;
+      background-color: $accent;
+    }
+  }
+  &__link {
+    @include textMediumBold;
+  }
+}
+
+@media (max-width: $m-width) {
+  .head-block {
+    &__title {
+      font-size: 18px;
+      line-height: 28px;
+      &::before {
+        bottom: -0px;
+      }
+    }
+  }
+}

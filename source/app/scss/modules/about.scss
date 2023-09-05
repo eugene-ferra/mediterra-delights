@@ -1,0 +1,49 @@
+.about {
+  background-color: $dark;
+  padding: 50px 0 80px;
+  color: $light;
+  &__inner {
+    margin-top: 50px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 40px 50px;
+  }
+  &__column {
+    flex: 40% 1 0;
+    @include flexSpaceBetween;
+    gap: 40px 0;
+    flex-direction: column;
+  }
+  &__column--reverse {
+    flex-direction: column-reverse;
+  }
+  &__text {
+    @include textArticle;
+  }
+  &__image {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    border-radius: $border;
+  }
+  &__picture {
+    width: 100%;
+  }
+}
+
+@media (max-width: $m-width) {
+  .about {
+    &__inner {
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    &__column {
+      flex: 100% 1 0;
+    }
+    &__column--reverse {
+      flex-direction: column;
+    }
+  }
+}

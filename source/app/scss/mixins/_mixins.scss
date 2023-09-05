@@ -16,11 +16,30 @@
   font-weight: 500;
 }
 
+@mixin textArticle {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 300;
+  @media (max-width: $m-width) {
+    font-size: 14px;
+    line-height: 18px;
+  }
+}
+
 @mixin textMediumRegular {
   font-size: 18px;
   font-weight: 400;
   line-height: 28px;
-  @media (max-width: $l-width) {
+  @media (max-width: $m-width) {
+    font-size: 14px;
+    line-height: 22px;
+  }
+}
+@mixin textMediumBold {
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 28px;
+  @media (max-width: $m-width) {
     font-size: 14px;
     line-height: 22px;
   }
