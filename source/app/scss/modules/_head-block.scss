@@ -21,6 +21,27 @@
   }
   &__link {
     @include textMediumBold;
+    position: relative;
+    padding-right: 34px;
+    margin-right: 6px;
+    &:hover {
+      &::before {
+        animation: move 0.8s ease-in-out infinite;
+      }
+    }
+    &::before {
+      content: '';
+      position: absolute;
+      display: block;
+      width: 24px;
+      height: 100%;
+      right: 0;
+      top: 0;
+      background-image: url('../images/moreArrow.svg');
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: contain;
+    }
   }
 }
 
@@ -33,5 +54,29 @@
         bottom: -0px;
       }
     }
+    &__link {
+      padding-right: 28px;
+      margin-right: 0;
+      &:hover {
+        &::before {
+          animation: none;
+        }
+      }
+      &::before {
+        width: 18px;
+      }
+    }
+  }
+}
+
+@keyframes move {
+  0% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+  100% {
+    transform: translateX(0);
   }
 }
