@@ -1,6 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { ValidationError } from 'class-validator';
+
+function formatErrors(errors: ValidationError[]) {
+  return errors.map((err) => {
+    const constraints = err.constraints;
+    const field = err.property;
+
+    return {
+      field,
+      message: constraints ? Object.values(constraints)[0] : 'Invalid value',
+    };
+  });
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,6 +24,13 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: (errors: ValidationError[]) => {
+        return new BadRequestException({
+          err_data: formatErrors(errors),
+          error: 'Bad Request',
+          statusCode: 400,
+        });
+      },
     }),
   );
 
