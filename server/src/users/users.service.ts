@@ -11,12 +11,12 @@ import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, UserDocument } from './schema/user.schema';
+import { User } from './schema/user.schema';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<User>,
   ) {}
 
   private ensureObjectId(id: string) {
@@ -44,7 +44,7 @@ export class UsersService {
         password: hashedPassword,
       });
 
-      return this.userModel.findById(created._id).lean().exec();
+      return created.toObject();
     } catch (err: unknown) {
       // Race-condition safe: unique index violation
       if (this.isDuplicateKeyError(err) && (err as any).code === 11000) {
@@ -59,7 +59,7 @@ export class UsersService {
   }
 
   async findByEmailWithPassword(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).select('+password').exec();
+    return this.userModel.findOne({ email }).select('+password').lean().exec();
   }
 
   async findById(id: string): Promise<User | null> {
@@ -83,11 +83,10 @@ export class UsersService {
         new: true,
         runValidators: true,
       })
-      .lean()
       .exec();
 
     if (!updated) throw new NotFoundException('User not found');
-    return updated;
+    return updated.toObject();
   }
 
   async changePassword(

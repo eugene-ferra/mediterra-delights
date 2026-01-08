@@ -18,7 +18,7 @@ export class RefreshSessionsService {
   async upsertSession(params: UpsertSessionParams): Promise<RefreshSession> {
     const refreshTokenHash = await bcrypt.hash(params.refreshToken, 12);
 
-    return this.sessionModel.findOneAndUpdate(
+    const session = await this.sessionModel.findOneAndUpdate(
       { userId: params.userId, deviceId: params.deviceId },
       {
         $set: {
@@ -31,15 +31,19 @@ export class RefreshSessionsService {
       },
       { new: true, upsert: true },
     );
+
+    return session.toObject();
   }
 
   async validateSession(
     params: ValidateSessionParams,
   ): Promise<RefreshSession | null> {
-    const session = await this.sessionModel.findOne({
-      userId: params.userId,
-      deviceId: params.deviceId,
-    });
+    const session = await this.sessionModel
+      .findOne({
+        userId: params.userId,
+        deviceId: params.deviceId,
+      })
+      .lean();
 
     if (!session) return null;
 
