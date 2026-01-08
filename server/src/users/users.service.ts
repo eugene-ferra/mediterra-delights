@@ -12,6 +12,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schema/user.schema';
+import { UserEntity } from './types/UserEntity.type';
 
 @Injectable()
 export class UsersService {
@@ -29,9 +30,32 @@ export class UsersService {
     return typeof err === 'object' && err !== null && 'code' in err;
   }
 
-  async create(dto: CreateUserDto): Promise<UserDocument> {
+  private toEntity(user: UserDocument): UserEntity {
+    return {
+      id: user._id,
+      name: user.name,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      avatar: user.avatar,
+      savedProducts: user.savedProducts,
+      password: user.password,
+      likedArticles: user.likedArticles,
+      savedArticles: user.savedArticles,
+      addedReviews: user.addedReviews,
+      addedComments: user.addedComments,
+      cart: user.cart,
+      orders: user.orders,
+      resetToken: user.resetToken,
+      resetTokenExpiresAt: user.resetTokenExpiresAt,
+    };
+  }
+
+  async create(dto: CreateUserDto): Promise<UserEntity> {
     // Fast pre-check (still need DB unique index for race conditions)
-    const exists = await this.userModel.exists({ email: dto.email });
+    const exists = await this.userModel.exists({ email: dto.email }).exec();
+
     if (exists)
       throw new ConflictException('User with this email already exists');
 
@@ -44,7 +68,7 @@ export class UsersService {
         password: hashedPassword,
       });
 
-      return created;
+      return this.toEntity(created);
     } catch (err: unknown) {
       // Race-condition safe: unique index violation
       if (this.isDuplicateKeyError(err) && (err as any).code === 11000) {
@@ -54,22 +78,26 @@ export class UsersService {
     }
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).lean().exec();
+  async findByEmail(email: string): Promise<UserEntity | null> {
+    const user = await this.userModel.findOne({ email }).exec();
+    if (!user) return null;
+    return this.toEntity(user);
   }
 
-  async findByEmailWithPassword(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email }).select('+password').exec();
+  async findByEmailWithPassword(email: string): Promise<UserEntity | null> {
+    const user = await this.userModel.findOne({ email }).exec();
+    if (!user) return null;
+    return this.toEntity(user);
   }
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string): Promise<UserEntity | null> {
     this.ensureObjectId(id);
-    const user = await this.userModel.findById(id).lean().exec();
+    const user = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException('User not found');
-    return user;
+    return this.toEntity(user);
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<User | null> {
+  async update(id: string, dto: UpdateUserDto): Promise<UserEntity | null> {
     this.ensureObjectId(id);
 
     const payload: UpdateUserDto = {};
@@ -86,7 +114,7 @@ export class UsersService {
       .exec();
 
     if (!updated) throw new NotFoundException('User not found');
-    return updated.toObject();
+    return this.toEntity(updated);
   }
 
   async changePassword(
@@ -95,7 +123,7 @@ export class UsersService {
   ): Promise<{ changed: true }> {
     this.ensureObjectId(id);
 
-    const user = await this.userModel.findById(id).select('+password').exec();
+    const user = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException('User not found');
 
     const ok = await bcrypt.compare(dto.oldPassword, user.password as string);

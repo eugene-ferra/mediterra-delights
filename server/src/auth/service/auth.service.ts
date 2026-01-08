@@ -65,20 +65,20 @@ export class AuthService {
 
     const created = await this.usersService.create(params.dto);
 
+    const deviceId = randomUUID();
+
     const accessToken = this.signAccessToken({
-      _id: created._id,
+      _id: created.id,
       role: created.role,
     });
 
-    const deviceId = randomUUID();
-
     const refreshToken = this.signRefreshToken(
-      { _id: created._id, role: created.role },
+      { _id: created.id, role: created.role },
       deviceId,
     );
 
     await this.sessionsService.upsertSession({
-      userId: created._id,
+      userId: created.id,
       deviceId: deviceId,
       refreshToken,
       userAgent: params.userAgent,
@@ -91,7 +91,6 @@ export class AuthService {
 
   async login(params: {
     dto: LoginDto;
-    deviceId: string;
     userAgent?: string;
     ip?: string;
   }): Promise<UserTokens> {
@@ -109,21 +108,23 @@ export class AuthService {
     );
     if (!ok) throw new UnauthorizedException('Invalid email or password');
 
+    const deviceId = randomUUID();
+
     const accessToken = this.signAccessToken({
-      _id: userWithPass._id,
+      _id: userWithPass.id,
       role: userWithPass.role,
     });
     const refreshToken = this.signRefreshToken(
       {
-        _id: userWithPass._id,
+        _id: userWithPass.id,
         role: userWithPass.role,
       },
-      params.deviceId,
+      deviceId,
     );
 
     await this.sessionsService.upsertSession({
-      userId: userWithPass._id,
-      deviceId: params.deviceId,
+      userId: userWithPass.id,
+      deviceId,
       refreshToken,
       userAgent: params.userAgent,
       ip: params.ip,
