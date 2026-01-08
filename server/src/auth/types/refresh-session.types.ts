@@ -1,0 +1,16 @@
+import { Types } from 'mongoose';
+
+export type UpsertSessionParams = {
+  userId: Types.ObjectId;
+  deviceId: string;
+  refreshToken: string; // raw token
+  userAgent?: string;
+  ip?: string;
+  expiresAt: Date;
+};
+
+export type ValidateSessionParams = {
+  userId: Types.ObjectId;
+  deviceId: string;
+  refreshToken: string; // raw token
+};
