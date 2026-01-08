@@ -6,12 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './schema/user.schema';
+import { User, UserDocument } from './schema/user.schema';
 
 @Injectable()
 export class UsersService {
@@ -29,7 +29,7 @@ export class UsersService {
     return typeof err === 'object' && err !== null && 'code' in err;
   }
 
-  async create(dto: CreateUserDto): Promise<User | null> {
+  async create(dto: CreateUserDto): Promise<UserDocument> {
     // Fast pre-check (still need DB unique index for race conditions)
     const exists = await this.userModel.exists({ email: dto.email });
     if (exists)
@@ -44,7 +44,7 @@ export class UsersService {
         password: hashedPassword,
       });
 
-      return created.toObject();
+      return created;
     } catch (err: unknown) {
       // Race-condition safe: unique index violation
       if (this.isDuplicateKeyError(err) && (err as any).code === 11000) {
@@ -58,8 +58,8 @@ export class UsersService {
     return this.userModel.findOne({ email }).lean().exec();
   }
 
-  async findByEmailWithPassword(email: string): Promise<User | null> {
-    return this.userModel.findOne({ email }).select('+password').lean().exec();
+  async findByEmailWithPassword(email: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ email }).select('+password').exec();
   }
 
   async findById(id: string): Promise<User | null> {

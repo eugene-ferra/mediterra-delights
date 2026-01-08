@@ -1,19 +1,40 @@
 import { Module } from '@nestjs/common';
-import { AuthService } from './service/auth.service';
-import { AuthController } from './auth.controller';
-import { MongooseModule } from '@nestjs/mongoose';
-import {
-  RefreshSession,
-  RefreshSessionSchema,
-} from './schema/refresh-session.schema';
+import { JwtModule, JwtService } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import type { SignOptions } from 'jsonwebtoken';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: RefreshSession.name, schema: RefreshSessionSchema },
-    ]),
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.getOrThrow<string>('JWT_ACCESS_SECRET'),
+        signOptions: {
+          expiresIn: config.get<SignOptions['expiresIn']>(
+            'JWT_ACCESS_EXPIRES_IN',
+          ),
+          algorithm: 'HS256',
+        },
+      }),
+    }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService],
+  providers: [
+    {
+      provide: 'REFRESH_JWT',
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        new JwtService({
+          secret: config.getOrThrow<string>('JWT_REFRESH_SECRET'),
+          signOptions: {
+            expiresIn: config.get<SignOptions['expiresIn']>(
+              'JWT_REFRESH_EXPIRES_IN',
+            ),
+            algorithm: 'HS256',
+          },
+        }),
+    },
+  ],
 })
 export class AuthModule {}

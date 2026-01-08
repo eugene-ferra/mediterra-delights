@@ -1,5 +1,11 @@
 import { Types } from 'mongoose';
 
+export type MetaData = {
+  devideId: string;
+  userAgent?: string;
+  ip?: string;
+};
+
 export type UpsertSessionParams = {
   userId: Types.ObjectId;
   deviceId: string;

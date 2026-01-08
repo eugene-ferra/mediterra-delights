@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 import { Model, Types } from 'mongoose';
 import { RefreshSession } from '../schema/refresh-session.schema';
 import {
@@ -15,10 +15,10 @@ export class RefreshSessionsService {
     private readonly sessionModel: Model<RefreshSession>,
   ) {}
 
-  async upsertSession(params: UpsertSessionParams): Promise<RefreshSession> {
+  async upsertSession(params: UpsertSessionParams): Promise<void> {
     const refreshTokenHash = await bcrypt.hash(params.refreshToken, 12);
 
-    const session = await this.sessionModel.findOneAndUpdate(
+    await this.sessionModel.findOneAndUpdate(
       { userId: params.userId, deviceId: params.deviceId },
       {
         $set: {
@@ -31,19 +31,15 @@ export class RefreshSessionsService {
       },
       { new: true, upsert: true },
     );
-
-    return session.toObject();
   }
 
   async validateSession(
     params: ValidateSessionParams,
   ): Promise<RefreshSession | null> {
-    const session = await this.sessionModel
-      .findOne({
-        userId: params.userId,
-        deviceId: params.deviceId,
-      })
-      .lean();
+    const session = await this.sessionModel.findOne({
+      userId: params.userId,
+      deviceId: params.deviceId,
+    });
 
     if (!session) return null;
 
@@ -53,7 +49,7 @@ export class RefreshSessionsService {
     );
     if (!ok) return null;
 
-    return session;
+    return session.toObject();
   }
 
   async removeSession(userId: Types.ObjectId, deviceId: string): Promise<void> {
