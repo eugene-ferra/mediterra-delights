@@ -2,9 +2,22 @@ import { Module } from '@nestjs/common';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import type { SignOptions } from 'jsonwebtoken';
+import { AuthController } from './auth.controller';
+import { AuthService } from './service/auth.service';
+import { RefreshSessionsService } from './service/refresh-session.service';
+import { UsersModule } from 'src/users/users.module';
+import { UsersService } from 'src/users/users.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import {
+  RefreshSession,
+  RefreshSessionSchema,
+} from './schema/refresh-session.schema';
 
 @Module({
   imports: [
+    MongooseModule.forFeature([
+      { name: RefreshSession.name, schema: RefreshSessionSchema },
+    ]),
     ConfigModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -19,7 +32,9 @@ import type { SignOptions } from 'jsonwebtoken';
         },
       }),
     }),
+    UsersModule,
   ],
+  controllers: [AuthController],
   providers: [
     {
       provide: 'REFRESH_JWT',
@@ -35,6 +50,8 @@ import type { SignOptions } from 'jsonwebtoken';
           },
         }),
     },
+    AuthService,
+    RefreshSessionsService,
   ],
 })
 export class AuthModule {}

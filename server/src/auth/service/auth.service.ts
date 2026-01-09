@@ -55,8 +55,8 @@ export class AuthService {
 
   async register(params: {
     dto: RegisterDto;
-    userAgent?: string;
-    ip?: string;
+    userAgent: string;
+    ip: string;
   }): Promise<UserTokens> {
     const existing = await this.usersService.findByEmail(params.dto.email);
     if (existing) {
