@@ -90,14 +90,14 @@ export class UsersService {
     return this.toEntity(user);
   }
 
-  async findById(id: string): Promise<UserEntity | null> {
+  async findById(id: string): Promise<UserEntity> {
     this.ensureObjectId(id);
     const user = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException('User not found');
     return this.toEntity(user);
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<UserEntity | null> {
+  async update(id: string, dto: UpdateUserDto): Promise<UserEntity> {
     this.ensureObjectId(id);
 
     const payload: UpdateUserDto = {};
