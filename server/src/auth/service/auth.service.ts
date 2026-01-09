@@ -12,13 +12,13 @@ import { UsersService } from 'src/users/users.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import {
-  AccessTokenPayload,
   RefreshTokenPayload,
   UserPayload,
   UserTokens,
 } from '../types/auth-payload.types';
 import { RefreshSessionsService } from './refresh-session.service';
 import { randomUUID } from 'crypto';
+import { AccessTokenPayload } from 'src/сommon/types/access-token-payload.type';
 
 @Injectable()
 export class AuthService {

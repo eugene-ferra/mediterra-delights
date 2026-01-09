@@ -12,7 +12,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './schema/user.schema';
-import { UserEntity } from './types/UserEntity.type';
+import { UserEntity } from './types/user-entity.type';
 
 @Injectable()
 export class UsersService {

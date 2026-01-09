@@ -5,11 +5,6 @@ export type UserPayload = {
   role: 'user' | 'admin';
 };
 
-export type AccessTokenPayload = {
-  sub: string;
-  role: 'user' | 'admin';
-};
-
 export type RefreshTokenPayload = {
   sub: string;
   deviceId: string;
