@@ -4,22 +4,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import type { SignOptions } from 'jsonwebtoken';
 import { AuthController } from './auth.controller';
 import { AuthService } from './service/auth.service';
-import { RefreshSessionsService } from './service/refresh-session.service';
 import { UsersModule } from 'src/users/users.module';
-import { MongooseModule } from '@nestjs/mongoose';
-import {
-  RefreshSession,
-  RefreshSessionSchema,
-} from './schema/refresh-session.schema';
+import { SessionModule } from 'src/session/session.module';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: RefreshSession.name, schema: RefreshSessionSchema },
-    ]),
-    ConfigModule,
-    UsersModule,
-  ],
+  imports: [ConfigModule, SessionModule, UsersModule],
   controllers: [AuthController],
   providers: [
     {
@@ -37,7 +26,6 @@ import {
         }),
     },
     AuthService,
-    RefreshSessionsService,
   ],
 })
 export class AuthModule {}

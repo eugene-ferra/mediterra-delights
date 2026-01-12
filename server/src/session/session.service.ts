@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model, Types } from 'mongoose';
-import { RefreshSession } from '../schema/refresh-session.schema';
+import { RefreshSession } from './schema/refresh-session.schema';
 import {
   UpsertSessionParams,
   ValidateSessionParams,
-} from '../types/refresh-session.types';
+} from './types/refresh-session.types';
 
 @Injectable()
-export class RefreshSessionsService {
+export class SessionsService {
   constructor(
     @InjectModel(RefreshSession.name)
     private readonly sessionModel: Model<RefreshSession>,

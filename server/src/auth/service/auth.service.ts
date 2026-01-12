@@ -16,15 +16,15 @@ import {
   UserPayload,
   UserTokens,
 } from '../types/auth-payload.types';
-import { RefreshSessionsService } from './refresh-session.service';
 import { randomUUID } from 'crypto';
 import { AccessTokenPayload } from 'src/сommon/types/access-token-payload.type';
+import { SessionsService } from 'src/session/session.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
-    private readonly sessionsService: RefreshSessionsService,
+    private readonly sessionsService: SessionsService,
     private readonly accessJwt: JwtService,
     @Inject('REFRESH_JWT') private readonly refreshJwt: JwtService,
     private readonly config: ConfigService,

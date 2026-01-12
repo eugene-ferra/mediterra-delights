@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { SignOptions } from 'jsonwebtoken';
+import { SessionModule } from './session/session.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SignOptions } from 'jsonwebtoken';
     }),
     UsersModule,
     AuthModule,
+    SessionModule,
   ],
   controllers: [],
   providers: [],
