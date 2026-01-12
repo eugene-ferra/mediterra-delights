@@ -209,4 +209,42 @@ export class AuthService {
 
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
+
+  async logout(refreshToken: string): Promise<void> {
+    let payload: RefreshTokenPayload;
+
+    try {
+      payload =
+        await this.refreshJwt.verifyAsync<RefreshTokenPayload>(refreshToken);
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const userIdStr = payload?.sub;
+    const deviceId = payload?.deviceId;
+
+    if (!userIdStr || !deviceId) {
+      throw new UnauthorizedException('Invalid refresh token payload');
+    }
+
+    let userId: Types.ObjectId;
+    try {
+      userId = new Types.ObjectId(userIdStr);
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token payload');
+    }
+
+    await this.sessionsService.removeSession(userId, deviceId);
+  }
+
+  async logoutAll(userId: string): Promise<void> {
+    let userObjId: Types.ObjectId;
+    try {
+      userObjId = new Types.ObjectId(userId);
+    } catch {
+      throw new UnauthorizedException('Invalid user id');
+    }
+
+    await this.sessionsService.removeAllSessions(userObjId);
+  }
 }
