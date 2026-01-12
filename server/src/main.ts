@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
+import cookieParser from 'cookie-parser';
 
 function formatErrors(errors: ValidationError[]) {
   return errors.map((err) => {
@@ -18,6 +19,7 @@ function formatErrors(errors: ValidationError[]) {
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
+  app.use(cookieParser());
 
   app.useGlobalPipes(
     new ValidationPipe({

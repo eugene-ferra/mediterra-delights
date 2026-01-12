@@ -4,6 +4,7 @@ import { RegisterDto } from './dto/register.dto';
 import { Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
+import { RefreshToken } from './decorator/refresh-token.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -38,6 +39,26 @@ export class AuthController {
     const userAgent = req.get('User-Agent') || 'unknown';
 
     const tokens = await this.authService.login({ dto, userAgent, ip });
+
+    this.setRefreshCookie(res, tokens.refreshToken);
+
+    return { accessToken: tokens.accessToken };
+  }
+
+  @Post('refresh')
+  async refresh(
+    @Req() req: Request,
+    @RefreshToken() refreshToken: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ accessToken: string }> {
+    const userAgent = req.get('User-Agent') || 'unknown';
+    const ip = req.ip;
+
+    const tokens = await this.authService.refresh({
+      refreshToken,
+      userAgent,
+      ip,
+    });
 
     this.setRefreshCookie(res, tokens.refreshToken);
 

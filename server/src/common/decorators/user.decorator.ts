@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { AccessTokenPayload } from 'src/сommon/types/access-token-payload.type';
+import { AccessTokenPayload } from 'src/common/types/access-token-payload.type';
 
 export const User = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): AccessTokenPayload => {

@@ -8,9 +8,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { AuthGuard } from 'src/сommon/guards/auth.guard';
-import { User } from 'src/сommon/user.decorator';
-import { AccessTokenPayload } from 'src/сommon/types/access-token-payload.type';
+import { AuthGuard } from 'src/common/guards/auth.guard';
+import { User } from 'src/common/decorators/user.decorator';
+import { AccessTokenPayload } from 'src/common/types/access-token-payload.type';
 import { UserEntity } from './types/user-entity.type';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';

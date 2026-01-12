@@ -17,8 +17,9 @@ import {
   UserTokens,
 } from '../types/auth-payload.types';
 import { randomUUID } from 'crypto';
-import { AccessTokenPayload } from 'src/сommon/types/access-token-payload.type';
+import { AccessTokenPayload } from 'src/common/types/access-token-payload.type';
 import { SessionsService } from 'src/session/session.service';
+import { Types } from 'mongoose';
 
 @Injectable()
 export class AuthService {
@@ -132,5 +133,80 @@ export class AuthService {
     });
 
     return { accessToken, refreshToken };
+  }
+
+  async refresh(params: {
+    refreshToken: string;
+    userAgent?: string;
+    ip?: string;
+  }): Promise<UserTokens> {
+    let payload: RefreshTokenPayload;
+
+    try {
+      payload = await this.refreshJwt.verifyAsync<RefreshTokenPayload>(
+        params.refreshToken,
+      );
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const userIdStr = payload?.sub;
+    const deviceId = payload?.deviceId;
+
+    if (!userIdStr || !deviceId) {
+      throw new UnauthorizedException('Invalid refresh token payload');
+    }
+
+    let userId: Types.ObjectId;
+    try {
+      userId = new Types.ObjectId(userIdStr);
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token payload');
+    }
+
+    const session = await this.sessionsService.validateSession({
+      userId,
+      deviceId,
+      refreshToken: params.refreshToken,
+    });
+
+    if (!session) {
+      await this.sessionsService.removeAllSessions(userId);
+      throw new UnauthorizedException('Refresh token reuse detected');
+    }
+
+    if (
+      session.expiresAt &&
+      new Date(session.expiresAt).getTime() < Date.now()
+    ) {
+      await this.sessionsService.removeSession(userId, deviceId);
+      throw new UnauthorizedException('Refresh token expired');
+    }
+
+    const user = await this.usersService.findById(userIdStr);
+    if (!user) {
+      await this.sessionsService.removeAllSessions(userId);
+      throw new UnauthorizedException('User not found');
+    }
+
+    const newAccessToken = this.signAccessToken({
+      _id: user.id,
+      role: user.role,
+    });
+    const newRefreshToken = this.signRefreshToken(
+      { _id: user.id, role: user.role },
+      deviceId,
+    );
+
+    await this.sessionsService.upsertSession({
+      userId: user.id,
+      deviceId,
+      refreshToken: newRefreshToken,
+      userAgent: params.userAgent,
+      ip: params.ip,
+      expiresAt: new Date(Date.now() + this.getRefreshExpiresMs()),
+    });
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
 }
