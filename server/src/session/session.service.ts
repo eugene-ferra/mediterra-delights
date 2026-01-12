@@ -7,6 +7,7 @@ import {
   UpsertSessionParams,
   ValidateSessionParams,
 } from './types/refresh-session.types';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class SessionsService {
@@ -16,7 +17,8 @@ export class SessionsService {
   ) {}
 
   async upsertSession(params: UpsertSessionParams): Promise<void> {
-    const refreshTokenHash = await bcrypt.hash(params.refreshToken, 12);
+    const pre = createHash('sha256').update(params.refreshToken).digest('hex');
+    const refreshTokenHash = await bcrypt.hash(pre, 12);
 
     await this.sessionModel.findOneAndUpdate(
       { userId: params.userId, deviceId: params.deviceId },
@@ -43,10 +45,9 @@ export class SessionsService {
 
     if (!session) return null;
 
-    const ok = await bcrypt.compare(
-      params.refreshToken,
-      session.refreshTokenHash,
-    );
+    const pre = createHash('sha256').update(params.refreshToken).digest('hex');
+
+    const ok = await bcrypt.compare(pre, session.refreshTokenHash);
     if (!ok) return null;
 
     return session.toObject();
