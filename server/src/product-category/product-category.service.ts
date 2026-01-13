@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   ProductCategory,
   ProductCategoryDocument,
@@ -96,5 +96,20 @@ export class ProductCategoryService {
       .countDocuments({ _id: id })
       .exec();
     return count;
+  }
+
+  async findManyByIds(ids: string[]): Promise<ProductCategoryEntity[]> {
+    const objectIds = ids
+      .filter((id) => Types.ObjectId.isValid(id))
+      .map((id) => new Types.ObjectId(id));
+
+    if (objectIds.length === 0) return [];
+
+    const docs = await this.productCategoryModel
+      .find({ _id: { $in: objectIds } })
+      .select('_id title slug')
+      .exec();
+
+    return docs.map((d) => this.toEntity(d));
   }
 }
