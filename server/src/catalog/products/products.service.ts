@@ -1,45 +1,46 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Types } from 'mongoose';
+import slugify from 'slugify';
 
 import { CreateProductDto } from './dto/create-product.dto';
-import { ProductEntity } from './types/product-entity.type';
-import { Product, ProductDocument } from './schema/product.schema';
-
-import { ProductCategoryService } from 'src/product-category/product-category.service';
-import { ProductCategoryEntity } from 'src/product-category/types/product-category.type';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { FindManyProductsQuery } from './types/product-query.type';
 import { FindManyProductsResult } from './types/find-many-products-result.type';
 import { ProductsSortKey, SortOrder } from './types/products-sort.type';
-import slugify from 'slugify';
+import { ProductEntity } from './types/product-entity.type';
+
+import { ProductsRepository } from './data/product-data.repository';
+import { CategoriesRepository } from '../categories/data/category-data.repository';
+import { CategoryEntity } from '../categories/types/category-entity.type';
+import { ProductRecord } from './data/types/product-record.type';
+import { CategoryRecord } from '../categories/data/types/category-record.type';
 
 @Injectable()
 export class ProductsService {
   constructor(
-    @InjectModel(Product.name)
-    private readonly productModel: Model<ProductDocument>,
-    private readonly productCategoryService: ProductCategoryService,
+    private readonly productsRepo: ProductsRepository,
+    private readonly categoriesRepo: CategoriesRepository,
   ) {}
 
   private toEntity(
-    product: ProductDocument,
-    category: ProductCategoryEntity,
+    product: ProductRecord,
+    category: CategoryRecord,
   ): ProductEntity {
     return {
-      id: product._id,
+      id: product.id,
       title: product.title,
       slug: product.slug,
       avgRating: product.avgRating,
       reviewCount: product.reviewCount,
       imgCover: product.imgCover,
       description: product.description,
+      fullText: product.fullText,
       category: {
         id: category.id,
         title: category.title,
         slug: category.slug,
       },
-      images: product.images,
+      images: product.images || [],
       weight: product.weight,
       price: product.price,
       discountPrice: product.discountPrice,
@@ -51,82 +52,71 @@ export class ProductsService {
   }
 
   async create(data: CreateProductDto): Promise<ProductEntity> {
-    const category = await this.productCategoryService.findById(
-      data.categoryId,
-    );
+    const isCategoryExist = await this.categoriesRepo.IsExist(data.categoryId);
+    if (!isCategoryExist) {
+      throw new BadRequestException(
+        'Invalid categoryId: Category does not exist.',
+      );
+    }
 
     const slug = slugify(data.title, { lower: true, locale: 'en' });
 
+    // TODO: Replace with actual image upload logic
     const imgCover = {
       jpg: 'placeholder.jpg',
       webp: 'placeholder.webp',
       avif: 'placeholder.avif',
     };
 
-    if (!category)
-      throw new BadRequestException(
-        'Invalid categoryId: Category does not exist.',
-      );
-
-    let createdProduct;
-
+    let created;
     try {
-      createdProduct = await this.productModel.create({
+      created = await this.productsRepo.create({
         ...data,
         slug,
         imgCover,
       });
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Error creating product');
     }
 
-    return this.toEntity(createdProduct, category);
+    let category = await this.categoriesRepo.findById(data.categoryId);
+
+    if (!category) {
+      category = {
+        id: data.categoryId,
+        title: 'Unknown',
+        slug: 'unknown',
+        isActive: false,
+      };
+    }
+
+    return this.toEntity(created, category);
   }
 
   async findOne(idOrSlug: string): Promise<ProductEntity | null> {
-    if (Types.ObjectId.isValid(idOrSlug)) {
-      return this.findById(idOrSlug);
+    let doc;
+
+    if (this.productsRepo.isValidProductId(idOrSlug)) {
+      doc = await this.productsRepo.findById(idOrSlug);
     } else {
-      return this.findBySlug(idOrSlug);
-    }
-  }
-
-  private async findById(id: string): Promise<ProductEntity | null> {
-    const product = await this.productModel.findById(id).exec();
-    if (!product) {
-      return null;
+      doc = await this.productsRepo.findBySlug(idOrSlug);
     }
 
-    const category = await this.productCategoryService.findById(
-      String(product.categoryId),
-    );
+    if (!doc) return null;
 
+    let category = await this.categoriesRepo.findById(String(doc.categoryId));
     if (!category) {
-      throw new BadRequestException(
-        'Data integrity error: Product has invalid categoryId.',
-      );
+      if (!category) {
+        category = {
+          id: doc.categoryId,
+          title: 'Unknown',
+          slug: 'unknown',
+          isActive: false,
+        };
+      }
     }
 
-    return this.toEntity(product, category);
-  }
-
-  private async findBySlug(slug: string): Promise<ProductEntity | null> {
-    const product = await this.productModel.findOne({ slug }).exec();
-    if (!product) {
-      return null;
-    }
-
-    const category = await this.productCategoryService.findById(
-      String(product.categoryId),
-    );
-
-    if (!category) {
-      throw new BadRequestException(
-        'Data integrity error: Product has invalid categoryId.',
-      );
-    }
-
-    return this.toEntity(product, category);
+    return this.toEntity(doc, category);
   }
 
   async updateById(id: string, data: UpdateProductDto): Promise<ProductEntity> {
@@ -134,45 +124,48 @@ export class ProductsService {
       ? slugify(data.title, { lower: true, locale: 'en' })
       : undefined;
 
-    const product = await this.productModel
-      .findByIdAndUpdate(id, { ...data, slug }, { new: true })
-      .exec();
-
-    if (!product) {
-      throw new BadRequestException('Product not found');
+    if (this.productsRepo.isValidProductId(id) === false) {
+      throw new BadRequestException('Invalid product ID');
     }
 
-    const category = await this.productCategoryService.findById(
+    const product = await this.productsRepo.updateById(id, { ...data, slug });
+    if (!product) throw new BadRequestException('Product not found');
+
+    let category = await this.categoriesRepo.findById(
       String(product.categoryId),
     );
-
     if (!category) {
-      throw new BadRequestException(
-        'Data integrity error: Product has invalid categoryId.',
-      );
+      category = {
+        id: product.categoryId,
+        title: 'Unknown',
+        slug: 'unknown',
+        isActive: false,
+      };
     }
 
     return this.toEntity(product, category);
   }
 
   async deleteById(id: string): Promise<{ deleted: true }> {
-    const result = await this.productModel.findByIdAndDelete(id).exec();
-    if (!result) {
-      throw new BadRequestException('Product not found');
+    if (this.productsRepo.isValidProductId(id) === false) {
+      throw new BadRequestException('Invalid product ID');
     }
+
+    const deleted = await this.productsRepo.deleteById(id);
+
+    if (!deleted) throw new BadRequestException('Product not found');
+
     return { deleted: true };
   }
 
   async findMany(
     query: FindManyProductsQuery = {},
   ): Promise<FindManyProductsResult> {
-    // defaults
     const page = Math.max(1, Number(query.page ?? 1));
     const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
 
     const sortBy: ProductsSortKey = query.sortBy ?? 'createdAt';
     const sortOrder: SortOrder = query.sortOrder ?? 'desc';
-    const sortDir = sortOrder === 'asc' ? 1 : -1;
 
     const sortFieldMap: Record<ProductsSortKey, string> = {
       createdAt: 'createdAt',
@@ -181,13 +174,10 @@ export class ProductsService {
       reviewCount: 'reviewCount',
       title: 'title',
     };
-
-    const sortField = sortFieldMap[sortBy];
-    if (!sortField) {
+    if (!sortFieldMap[sortBy]) {
       throw new BadRequestException(`Invalid sortBy: ${String(query.sortBy)}`);
     }
 
-    // filter build
     const filter: Record<string, any> = {};
 
     if (query.categoryId) {
@@ -197,13 +187,9 @@ export class ProductsService {
       filter.categoryId = new Types.ObjectId(query.categoryId);
     }
 
-    if (typeof query.isVegan === 'boolean') {
-      filter.isVegan = query.isVegan;
-    }
-
-    if (typeof query.isNewProduct === 'boolean') {
+    if (typeof query.isVegan === 'boolean') filter.isVegan = query.isVegan;
+    if (typeof query.isNewProduct === 'boolean')
       filter.isNewProduct = query.isNewProduct;
-    }
 
     if (query.minPrice !== undefined || query.maxPrice !== undefined) {
       filter.price = {};
@@ -246,50 +232,41 @@ export class ProductsService {
       ];
     }
 
-    const skip = (page - 1) * limit;
-
-    const [products, total] = await Promise.all([
-      this.productModel
-        .find(filter)
-        .sort({ [sortField]: sortDir, _id: sortDir }) // stable
-        .skip(skip)
-        .limit(limit)
-        .exec(),
-      this.productModel.countDocuments(filter).exec(),
-    ]);
+    const { docs: products, total } = await this.productsRepo.findMany({
+      query,
+      filter,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    });
 
     if (products.length === 0) {
       return {
         items: [],
-        meta: {
-          page,
-          limit,
-          total,
-          pages: 0,
-          sortBy,
-          sortOrder,
-        },
+        meta: { page, limit, total, pages: 0, sortBy, sortOrder },
       };
     }
 
-    // batch categories
     const uniqueCategoryIds = [
       ...new Set(products.map((p) => String(p.categoryId))),
     ];
-
     const categories =
-      await this.productCategoryService.findManyByIds(uniqueCategoryIds);
+      await this.categoriesRepo.findManyByIds(uniqueCategoryIds);
 
-    const categoryMap = new Map<string, ProductCategoryEntity>(
-      categories.map((c) => [c.id.toString(), c]),
+    const categoryMap = new Map<string, CategoryEntity>(
+      categories.map((c) => [String(c.id), c]),
     );
 
     const items = products.map((p) => {
-      const category = categoryMap.get(String(p.categoryId));
+      let category = categoryMap.get(String(p.categoryId));
       if (!category) {
-        throw new BadRequestException(
-          `Data integrity error: Product ${String(p._id)} has invalid categoryId.`,
-        );
+        category = {
+          id: p.categoryId,
+          title: 'Unknown',
+          slug: 'unknown',
+          isActive: false,
+        };
       }
       return this.toEntity(p, category);
     });

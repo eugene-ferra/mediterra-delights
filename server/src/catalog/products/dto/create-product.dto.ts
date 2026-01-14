@@ -91,9 +91,9 @@ export class CreateProductDto {
   @IsNotEmpty({ message: 'Cook time is required.' })
   cookTime!: number;
 
-  @IsOptional()
   @IsBoolean({ message: 'isNewProduct must be a boolean value.' })
-  isNewProduct?: boolean;
+  @IsNotEmpty({ message: 'isNewProduct is required.' })
+  isNewProduct!: boolean;
 
   @IsOptional()
   @IsArray({ message: 'Compound must be an array.' })

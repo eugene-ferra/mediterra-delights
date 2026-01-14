@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
-export type ProductCategoryDocument = HydratedDocument<ProductCategory>;
+export type CategoryDocument = HydratedDocument<Category>;
 
 @Schema()
-export class ProductCategory {
+export class Category {
   @Prop({ required: true, trim: true })
   title!: string;
 
@@ -15,8 +15,7 @@ export class ProductCategory {
   isActive!: boolean;
 }
 
-export const ProductCategorySchema =
-  SchemaFactory.createForClass(ProductCategory);
+export const CategorySchema = SchemaFactory.createForClass(Category);
 
-ProductCategorySchema.index({ slug: 1 }, { unique: true });
-ProductCategorySchema.index({ title: 1 });
+CategorySchema.index({ slug: 1 }, { unique: true });
+CategorySchema.index({ title: 1 });

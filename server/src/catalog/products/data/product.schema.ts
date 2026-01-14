@@ -90,7 +90,7 @@ export class Product {
   discountPrice?: number;
 
   @Prop({ type: NutrientsSchema, default: {} })
-  nutrients?: Nutrients;
+  nutrients!: Nutrients;
 
   @Prop({
     required: [true, 'Product must have a isVegan prorerty!'],
@@ -101,7 +101,7 @@ export class Product {
   cookTime!: number;
 
   @Prop()
-  isNewProduct?: boolean;
+  isNewProduct!: boolean;
 
   @Prop({ type: [String], default: [] })
   compound?: string[];

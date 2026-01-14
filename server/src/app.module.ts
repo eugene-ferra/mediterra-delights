@@ -5,8 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import { SignOptions } from 'jsonwebtoken';
-import { ProductCategoryModule } from './product-category/product-category.module';
-import { ProductsModule } from './products/products.module';
+import { CategoryModule } from './catalog/categories/category.module';
+import { ProductsModule } from './catalog/products/products.module';
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { ProductsModule } from './products/products.module';
     }),
     UsersModule,
     AuthModule,
-    ProductCategoryModule,
+    CategoryModule,
     ProductsModule,
   ],
   controllers: [],
