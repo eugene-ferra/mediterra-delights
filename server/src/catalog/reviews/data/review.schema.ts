@@ -3,7 +3,7 @@ import { HydratedDocument, Types } from 'mongoose';
 
 export type ReviewDocument = HydratedDocument<Review>;
 
-@Schema({ timestamps: true })
+@Schema()
 export class Review {
   @Prop({
     type: Types.ObjectId,
@@ -43,6 +43,12 @@ export class Review {
     index: true,
   })
   isModerated!: boolean;
+
+  @Prop({ type: Date, default: Date.now })
+  createdAt!: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  updatedAt!: Date;
 }
 
 export const ReviewSchema = SchemaFactory.createForClass(Review);
