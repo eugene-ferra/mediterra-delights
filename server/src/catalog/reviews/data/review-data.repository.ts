@@ -28,7 +28,7 @@ export class ReviewsRepository {
       userId: String(doc.userId),
       review: doc.review ?? '',
       rating: doc.rating,
-      isModerated: doc.isModerated,
+      status: doc.status,
       createdAt: doc.createdAt as Date,
       updatedAt: doc.updatedAt as Date,
     };
@@ -40,7 +40,6 @@ export class ReviewsRepository {
       userId: new Types.ObjectId(data.userId),
       review: data.review ?? '',
       rating: data.rating,
-      isModerated: false,
     });
 
     return this.toRecord(doc);
@@ -138,6 +137,31 @@ export class ReviewsRepository {
         isModerated: true,
       })
       .exec();
+  }
+
+  async getModeratedStatsByProductId(productId: string): Promise<{
+    reviewCount: number;
+    avgRating: number;
+  }> {
+    const pid = new Types.ObjectId(productId);
+
+    const stats = await this.reviewModel.aggregate([
+      { $match: { productId: pid, isModerated: true } },
+      {
+        $group: {
+          _id: '$productId',
+          reviewCount: { $sum: 1 },
+          avgRating: { $avg: '$rating' },
+        },
+      },
+    ]);
+
+    if (!stats[0]) return { reviewCount: 0, avgRating: 0 };
+
+    return {
+      reviewCount: Number(stats[0].reviewCount ?? 0),
+      avgRating: Number(stats[0].avgRating ?? 0),
+    };
   }
 
   isValidId(id: string): boolean {

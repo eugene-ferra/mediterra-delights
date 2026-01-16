@@ -1,19 +1,21 @@
+import { ReviewStatus } from '../review.schema';
+
 export type ReviewRecord = {
   id: string;
   productId: string;
   userId: string;
-  review: string;
+  review?: string;
   rating: number;
-  isModerated: boolean;
+  status: ReviewStatus;
   createdAt: Date;
   updatedAt: Date;
 };
 
 export type CreateReviewRecord = Omit<
   ReviewRecord,
-  'id' | 'createdAt' | 'updatedAt' | 'isModerated'
+  'id' | 'createdAt' | 'updatedAt' | 'status'
 >;
 
 export type UpdateReviewRecord = Partial<CreateReviewRecord> & {
-  isModerated?: boolean;
+  status?: ReviewStatus;
 };

@@ -3,6 +3,12 @@ import { HydratedDocument, Types } from 'mongoose';
 
 export type ReviewDocument = HydratedDocument<Review>;
 
+export enum ReviewStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}
+
 @Schema()
 export class Review {
   @Prop({
@@ -27,7 +33,7 @@ export class Review {
     maxLength: 1000,
     default: '',
   })
-  review!: string;
+  review?: string;
 
   @Prop({
     type: Number,
@@ -38,11 +44,12 @@ export class Review {
   rating!: number;
 
   @Prop({
-    type: Boolean,
-    default: false,
-    index: true,
+    type: String,
+    enum: ReviewStatus,
+    required: true,
+    default: ReviewStatus.PENDING,
   })
-  isModerated!: boolean;
+  status!: ReviewStatus;
 
   @Prop({ type: Date, default: Date.now })
   createdAt!: Date;
