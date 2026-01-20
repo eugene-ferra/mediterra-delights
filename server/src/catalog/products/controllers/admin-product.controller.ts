@@ -13,26 +13,31 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 
-import { ProductsService } from './products.service';
-import { ProductEntity } from './types/product-entity.type';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { FindManyProductsQuery } from './types/product-query.type';
-import { FindManyProductsResult } from './types/find-many-products-result.type';
+import { ProductsService } from '../products.service';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
 
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { AdminGuard } from 'src/common/guards/admin.guard';
+import { ProductEntity } from '../../data/entities/product-entity.type';
+import { FindManyProductsQueryDto } from '../dto/find-many-products.dto';
 
-@Controller('products')
-export class ProductsController {
+@UseGuards(AuthGuard, AdminGuard)
+@Controller('admin/products')
+export class AdminProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get('/')
   async findMany(
     @Res({ passthrough: true }) res: Response,
-    @Query() query: FindManyProductsQuery,
-  ): Promise<FindManyProductsResult> {
-    return this.productsService.findMany(query);
+    @Query() query: FindManyProductsQueryDto,
+  ): Promise<ProductEntity[]> {
+    const docs = await this.productsService.findMany(query, {
+      includeInactiveCategories: true,
+      includeInactiveProducts: true,
+    });
+
+    return docs;
   }
 
   @Get('/:id')
@@ -47,7 +52,6 @@ export class ProductsController {
     return product;
   }
 
-  @UseGuards(AuthGuard, AdminGuard)
   @Post('/')
   async create(
     @Res({ passthrough: true }) res: Response,
@@ -56,17 +60,15 @@ export class ProductsController {
     return this.productsService.create(dto);
   }
 
-  @UseGuards(AuthGuard, AdminGuard)
   @Patch('/:id')
   async updateById(
     @Res({ passthrough: true }) res: Response,
     @Param('id') id: string,
     @Body() dto: UpdateProductDto,
-  ): Promise<ProductEntity> {
-    return this.productsService.updateById(id, dto);
+  ): Promise<{ updated: true } | null> {
+    return await this.productsService.updateById(id, dto);
   }
 
-  @UseGuards(AuthGuard, AdminGuard)
   @Delete('/:id')
   async deleteById(
     @Res({ passthrough: true }) res: Response,

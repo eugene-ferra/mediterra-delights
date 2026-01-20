@@ -1,17 +1,18 @@
 import { ImageSet, OptionalImageSet } from 'src/common/types/image-set.type';
 import { Nutrients } from 'src/common/types/nutrients.type';
+import { CategoryEntity } from './category-entity.type';
 
-export type ProductRecord = {
+export type ProductEntity = {
   id: string;
   title: string;
   slug: string;
-  categoryId: string;
+  category: CategoryEntity;
   description: string;
   fullText?: string;
   avgRating: number;
   reviewCount: number;
   imgCover: ImageSet;
-  images?: OptionalImageSet[];
+  images: OptionalImageSet[];
   weight: number;
   price: number;
   discountPrice?: number;
@@ -21,10 +22,3 @@ export type ProductRecord = {
   isNewProduct: boolean;
   compound?: string[];
 };
-
-export type CreateProductRecord = Omit<
-  ProductRecord,
-  'id' | 'avgRating' | 'reviewCount'
->;
-
-export type UpdateProductRecord = Partial<CreateProductRecord>;

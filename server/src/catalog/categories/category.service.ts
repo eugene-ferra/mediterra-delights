@@ -1,55 +1,46 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CategoryEntity } from './types/category-entity.type';
+import { CategoryEntity } from '../data/entities/category-entity.type';
 import slugify from 'slugify';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { CategoriesRepository } from './data/category-data.repository';
-import { CategoryRecord } from './data/types/category-record.type';
+import { CategoriesRepository } from '../data/repositories/category.repository';
+import { ProductsRepository } from '../data/repositories/product.repository';
 
 @Injectable()
 export class CategoryService {
-  constructor(private readonly categoryRepo: CategoriesRepository) {}
+  constructor(
+    private readonly categoryRepo: CategoriesRepository,
+    private readonly productRepo: ProductsRepository,
+  ) {}
 
-  private toEntity(doc: CategoryRecord): CategoryEntity {
-    return {
-      id: doc.id,
-      title: doc.title,
-      slug: doc.slug,
-      isActive: doc.isActive,
-    };
+  async findAll(filter?: { isActive?: boolean }): Promise<CategoryEntity[]> {
+    const categories = await this.categoryRepo.findAll(filter?.isActive);
+    return categories;
   }
 
-  async findAll(): Promise<CategoryEntity[]> {
-    const records = await this.categoryRepo.findAll();
-    return records.map((r) => this.toEntity(r));
-  }
-
-  async findById(id: string): Promise<CategoryEntity | null> {
+  async findOne(id: string): Promise<CategoryEntity | null> {
     if (this.categoryRepo.isValidCategoryId(id) === false) {
-      throw new BadRequestException('Invalid category ID');
+      return await this.categoryRepo.findBySlug(id);
     }
 
-    const record = await this.categoryRepo.findById(id);
-
-    return record ? this.toEntity(record) : null;
+    return await this.categoryRepo.findById(id);
   }
 
   async createOne(payload: CreateCategoryDto): Promise<CategoryEntity> {
     const slug = slugify(payload.title, { lower: true, locale: 'en' });
 
-    const createdDoc = await this.categoryRepo.create({
-      title: payload.title,
-      slug,
-      isActive: payload.isActive,
-    });
+    if (await this.categoryRepo.findBySlug(slug)) {
+      throw new BadRequestException('Category with this slug already exists.');
+    }
 
-    return this.toEntity(createdDoc);
+    const createdDoc = await this.categoryRepo.create({ ...payload, slug });
+    return createdDoc;
   }
 
   async updateOne(
     id: string,
     payload: UpdateCategoryDto,
-  ): Promise<CategoryEntity | null> {
+  ): Promise<{ updated: true }> {
     if (this.categoryRepo.isValidCategoryId(id) === false) {
       throw new BadRequestException('Invalid category ID');
     }
@@ -58,34 +49,31 @@ export class CategoryService {
       ? slugify(payload.title, { lower: true, locale: 'en' })
       : undefined;
 
-    const updatedDoc = await this.categoryRepo.updateById(id, {
+    const res = await this.categoryRepo.updateById(id, {
       ...payload,
       slug,
     });
 
-    return updatedDoc ? this.toEntity(updatedDoc) : null;
+    if (!res) throw new BadRequestException('Category not found');
+
+    return res;
   }
 
-  async isExist(id: string): Promise<boolean> {
-    const doc = await this.categoryRepo.IsExist(id);
+  async deleteById(id: string): Promise<{ deleted: true }> {
+    if (this.categoryRepo.isValidCategoryId(id) === false) {
+      throw new BadRequestException('Invalid category ID');
+    }
 
-    return !!doc;
-  }
+    if (await this.productRepo.countByCategoryId(id)) {
+      throw new BadRequestException(
+        'Cannot delete category with associated products',
+      );
+    }
 
-  async countDocuments(id: string): Promise<number> {
-    const count = await this.categoryRepo.countById(id);
-    return count;
-  }
+    const res = await this.categoryRepo.deleteById(id);
 
-  async findManyByIds(ids: string[]): Promise<CategoryEntity[]> {
-    const objectIds = ids.filter((id) =>
-      this.categoryRepo.isValidCategoryId(id),
-    );
+    if (!res) throw new BadRequestException('Category not found');
 
-    if (objectIds.length === 0) return [];
-
-    const docs = await this.categoryRepo.findManyByIds(ids);
-
-    return docs.map((d) => this.toEntity(d));
+    return res;
   }
 }

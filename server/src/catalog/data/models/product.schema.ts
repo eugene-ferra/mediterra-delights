@@ -56,7 +56,7 @@ export class Product {
 
   @Prop({
     type: Types.ObjectId,
-    ref: 'ProductCategory',
+    ref: 'Category',
     required: true,
     index: true,
   })
@@ -105,8 +105,22 @@ export class Product {
 
   @Prop({ type: [String], default: [] })
   compound?: string[];
+
+  @Prop({ type: Boolean, default: true })
+  isActive!: boolean;
+
+  @Prop({ default: Date.now })
+  createdAt!: Date;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
 ProductSchema.index({ slug: 1 }, { unique: true });
+ProductSchema.index(
+  { title: 'text', description: 'text', fullText: 'text' },
+  {
+    name: 'products_text_idx',
+    weights: { title: 10, description: 4, fullText: 1 },
+    default_language: 'english',
+  },
+);

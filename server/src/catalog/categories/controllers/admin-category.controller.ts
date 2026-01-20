@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -8,16 +9,17 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { CategoryService } from './category.service';
-import { CategoryEntity } from './types/category-entity.type';
+import { CategoryService } from '../category.service';
+import { CategoryEntity } from '../../data/entities/category-entity.type';
 import { Response } from 'express';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { AdminGuard } from 'src/common/guards/admin.guard';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CreateCategoryDto } from '../dto/create-category.dto';
+import { UpdateCategoryDto } from '../dto/update-category.dto';
 
-@Controller('product-categories')
-export class CategoryController {
+@UseGuards(AuthGuard, AdminGuard)
+@Controller('admin/categories')
+export class AdminCategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
   @Get('/')
@@ -28,7 +30,6 @@ export class CategoryController {
     return categories;
   }
 
-  @UseGuards(AuthGuard, AdminGuard)
   @Post('/')
   async createCategory(
     @Res({ passthrough: true }) res: Response,
@@ -38,17 +39,25 @@ export class CategoryController {
     return category;
   }
 
-  @UseGuards(AuthGuard, AdminGuard)
   @Patch('/:id')
   async updateCategory(
     @Res({ passthrough: true }) res: Response,
     @Body() updateCategoryDto: UpdateCategoryDto,
     @Param('id') id: string,
-  ): Promise<CategoryEntity | null> {
+  ): Promise<{ updated: true }> {
     const category = await this.categoryService.updateOne(
       id,
       updateCategoryDto,
     );
     return category;
+  }
+
+  @Delete('/:id/delete')
+  async deleteCategory(
+    @Res({ passthrough: true }) res: Response,
+    @Param('id') id: string,
+  ): Promise<{ deleted: true }> {
+    const result = await this.categoryService.deleteById(id);
+    return result;
   }
 }

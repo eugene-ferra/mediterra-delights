@@ -1,19 +1,13 @@
 import { Module } from '@nestjs/common';
+import { CatalogDataModule } from '../data/catalog-data.module';
 import { CategoryService } from './category.service';
-import { CategoryController } from './category.controller';
-import { MongooseModule } from '@nestjs/mongoose';
-import { Category, CategorySchema } from './data/category.schema';
-import { CategoriesDataModule } from './data/category-data.module';
+import { PublicCategoryController } from './controllers/public-category.controller';
+import { AdminCategoryController } from './controllers/admin-category.controller';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: Category.name, schema: CategorySchema },
-    ]),
-    CategoriesDataModule,
-  ],
-  controllers: [CategoryController],
+  imports: [CatalogDataModule],
   providers: [CategoryService],
+  controllers: [PublicCategoryController, AdminCategoryController],
   exports: [CategoryService],
 })
 export class CategoryModule {}

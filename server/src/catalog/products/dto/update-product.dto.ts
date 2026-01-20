@@ -44,7 +44,6 @@ export class UpdateProductDto {
   @IsString()
   title?: string;
 
-  // В DTO лучше держать как string, не Types.ObjectId
   @IsOptional()
   @IsMongoId({ message: 'categoryId must be a valid MongoDB ObjectId.' })
   categoryId?: string;

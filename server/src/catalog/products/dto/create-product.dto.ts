@@ -99,4 +99,8 @@ export class CreateProductDto {
   @IsArray({ message: 'Compound must be an array.' })
   @IsString({ each: true, message: 'Each compound item must be a string.' })
   compound?: string[];
+
+  @IsNotEmpty({ message: 'isActive is required.' })
+  @IsBoolean({ message: 'isActive must be a boolean value.' })
+  isActive!: boolean;
 }
