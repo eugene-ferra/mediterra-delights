@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { CategoryEntity } from '../data/entities/category-entity.type';
 import slugify from 'slugify';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -13,8 +18,10 @@ export class CategoryService {
     private readonly productRepo: ProductsRepository,
   ) {}
 
-  async findAll(filter?: { isActive?: boolean }): Promise<CategoryEntity[]> {
-    const categories = await this.categoryRepo.findAll(filter?.isActive);
+  async findAll(filter?: {
+    includeInactive?: boolean;
+  }): Promise<CategoryEntity[]> {
+    const categories = await this.categoryRepo.findAll(filter?.includeInactive);
     return categories;
   }
 
@@ -30,7 +37,9 @@ export class CategoryService {
     const slug = slugify(payload.title, { lower: true, locale: 'en' });
 
     if (await this.categoryRepo.findBySlug(slug)) {
-      throw new BadRequestException('Category with this slug already exists.');
+      throw new ConflictException(
+        'It looks like category with such title already exists',
+      );
     }
 
     const createdDoc = await this.categoryRepo.create({ ...payload, slug });
@@ -41,38 +50,38 @@ export class CategoryService {
     id: string,
     payload: UpdateCategoryDto,
   ): Promise<{ updated: true }> {
-    if (this.categoryRepo.isValidCategoryId(id) === false) {
-      throw new BadRequestException('Invalid category ID');
-    }
-
     const slug = payload.title
       ? slugify(payload.title, { lower: true, locale: 'en' })
       : undefined;
+
+    if (await this.categoryRepo.findBySlug(slug || '')) {
+      throw new ConflictException(
+        'It looks like category with such title already exists',
+      );
+    }
 
     const res = await this.categoryRepo.updateById(id, {
       ...payload,
       slug,
     });
 
-    if (!res) throw new BadRequestException('Category not found');
+    if (!res)
+      throw new NotFoundException('It looks like category to update not found');
 
     return res;
   }
 
   async deleteById(id: string): Promise<{ deleted: true }> {
-    if (this.categoryRepo.isValidCategoryId(id) === false) {
-      throw new BadRequestException('Invalid category ID');
-    }
-
     if (await this.productRepo.countByCategoryId(id)) {
-      throw new BadRequestException(
-        'Cannot delete category with associated products',
+      throw new UnprocessableEntityException(
+        'This category has products assigned to it and cannot be deleted.',
       );
     }
 
     const res = await this.categoryRepo.deleteById(id);
 
-    if (!res) throw new BadRequestException('Category not found');
+    if (!res)
+      throw new NotFoundException('It looks like category to delete not found');
 
     return res;
   }

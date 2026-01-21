@@ -11,7 +11,9 @@ export class PublicCategoryController {
   async getAllCategories(
     @Res({ passthrough: true }) res: Response,
   ): Promise<CategoryEntity[]> {
-    const categories = await this.categoryService.findAll({ isActive: true });
+    const categories = await this.categoryService.findAll({
+      includeInactive: false,
+    });
     return categories;
   }
 }

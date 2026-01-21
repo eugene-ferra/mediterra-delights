@@ -1,7 +1,8 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import slugify from 'slugify';
 
@@ -22,20 +23,24 @@ export class ProductsService {
 
   async create(data: CreateProductDto): Promise<ProductEntity> {
     if (!this.categoriesRepo.isValidCategoryId(data.categoryId)) {
-      throw new BadRequestException('Invalid categoryId');
+      throw new UnprocessableEntityException(
+        'Provided category does not exist.',
+      );
     }
 
     const isCategoryExist = await this.categoriesRepo.IsExist(data.categoryId);
     if (!isCategoryExist) {
-      throw new BadRequestException(
-        'Invalid categoryId: Category does not exist.',
+      throw new UnprocessableEntityException(
+        'Provided category does not exist.',
       );
     }
 
     const slug = slugify(data.title, { lower: true, locale: 'en' });
 
     if (await this.productsRepo.findBySlug(slug)) {
-      throw new ConflictException('Product with this slug already exists.');
+      throw new ConflictException(
+        'It looks like product with such title already exists',
+      );
     }
 
     // TODO: Replace with actual image upload logic
@@ -81,42 +86,50 @@ export class ProductsService {
     data: UpdateProductDto,
   ): Promise<{ updated: true }> {
     if (data.categoryId) {
-      if (!this.categoriesRepo.isValidCategoryId(data.categoryId)) {
-        throw new BadRequestException('Invalid categoryId');
-      }
-
       const isCategoryExist = await this.categoriesRepo.IsExist(
         data.categoryId,
       );
-      if (!isCategoryExist) {
-        throw new BadRequestException(
-          'Invalid categoryId: Category does not exist.',
+      if (!isCategoryExist)
+        throw new UnprocessableEntityException(
+          'Provided category does not exist.',
         );
-      }
     }
 
     const slug = data.title
       ? slugify(data.title, { lower: true, locale: 'en' })
       : undefined;
 
-    if (this.productsRepo.isValidProductId(id) === false) {
-      throw new BadRequestException('Invalid product ID');
+    if (slug) {
+      const existingProduct = await this.productsRepo.findBySlug(slug);
+      if (existingProduct && existingProduct.id !== id)
+        throw new ConflictException(
+          'It looks like product with such title already exists',
+        );
     }
 
-    const product = await this.productsRepo.updateById(id, { ...data, slug });
-    if (!product) throw new BadRequestException('Product not found');
+    if (data.discountPrice) {
+      const product = await this.productsRepo.findById(id);
+
+      if (!product) throw new NotFoundException('Product to update not found');
+
+      if (data.discountPrice >= product.price) {
+        throw new UnprocessableEntityException(
+          'Discount price must be less than the original price',
+        );
+      }
+    }
+
+    const updated = await this.productsRepo.updateById(id, { ...data, slug });
+
+    if (!updated) throw new NotFoundException('Product to update not found');
 
     return { updated: true };
   }
 
   async deleteById(id: string): Promise<{ deleted: true }> {
-    if (this.productsRepo.isValidProductId(id) === false) {
-      throw new BadRequestException('Invalid product ID');
-    }
-
     const deleted = await this.productsRepo.deleteById(id);
 
-    if (!deleted) throw new BadRequestException('Product not found');
+    if (!deleted) throw new NotFoundException('Product not found');
 
     return { deleted: true };
   }
@@ -143,9 +156,6 @@ export class ProductsService {
       title: 'title',
     };
     const sortField = sortFieldMap[sortBy];
-    if (!sortField) {
-      throw new BadRequestException(`Invalid sortBy: ${String(query.sortBy)}`);
-    }
 
     const match: Record<string, any> = {};
 
@@ -153,13 +163,7 @@ export class ProductsService {
       match.isActive = true;
     }
 
-    if (query.categoryId) {
-      if (!this.categoriesRepo.isValidCategoryId(query.categoryId)) {
-        throw new BadRequestException('Invalid categoryId');
-      }
-
-      match.categoryId = query.categoryId;
-    }
+    if (query.categoryId) match.categoryId = query.categoryId;
 
     if (typeof query.isVegan === 'boolean') match.isVegan = query.isVegan;
     if (typeof query.isNewProduct === 'boolean')
@@ -169,31 +173,16 @@ export class ProductsService {
       match.price = {};
       if (query.minPrice !== undefined) {
         const v = Number(query.minPrice);
-        if (!Number.isFinite(v))
-          throw new BadRequestException('Invalid minPrice');
         match.price.$gte = v;
       }
       if (query.maxPrice !== undefined) {
         const v = Number(query.maxPrice);
-        if (!Number.isFinite(v))
-          throw new BadRequestException('Invalid maxPrice');
         match.price.$lte = v;
-      }
-      if (
-        match.price.$gte !== undefined &&
-        match.price.$lte !== undefined &&
-        match.price.$gte > match.price.$lte
-      ) {
-        throw new BadRequestException(
-          'minPrice cannot be greater than maxPrice',
-        );
       }
     }
 
     if (query.minRating !== undefined) {
       const v = Number(query.minRating);
-      if (!Number.isFinite(v))
-        throw new BadRequestException('Invalid minRating');
       match.avgRating = { $gte: v };
     }
 

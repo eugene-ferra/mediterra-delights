@@ -1,9 +1,9 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -47,7 +47,7 @@ export class AdminProductsController {
   ): Promise<ProductEntity> {
     const product = await this.productsService.findOne(id);
     if (!product) {
-      throw new BadRequestException('Product not found');
+      throw new NotFoundException('Product not found');
     }
     return product;
   }
@@ -57,7 +57,7 @@ export class AdminProductsController {
     @Res({ passthrough: true }) res: Response,
     @Body() dto: CreateProductDto,
   ): Promise<ProductEntity> {
-    return this.productsService.create(dto);
+    return await this.productsService.create(dto);
   }
 
   @Patch('/:id')

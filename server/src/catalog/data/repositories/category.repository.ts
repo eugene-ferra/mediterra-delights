@@ -25,6 +25,8 @@ export class CategoriesRepository {
   }
 
   async findById(id: string): Promise<CategoryEntity | null> {
+    if (!Types.ObjectId.isValid(id)) return null;
+
     const doc = await this.categoryModel.findById(id).lean().exec();
     if (!doc) return null;
 
@@ -38,15 +40,15 @@ export class CategoriesRepository {
     return this.toEntity(doc);
   }
 
-  async findAll(isActive?: boolean): Promise<CategoryEntity[]> {
-    const query = isActive !== undefined ? { isActive } : {};
+  async findAll(includeInactive?: boolean): Promise<CategoryEntity[]> {
+    const query = includeInactive !== undefined ? {} : { isActive: true };
     const docs = await this.categoryModel.find(query).lean().exec();
 
     return docs.map((d) => this.toEntity(d));
   }
 
   async countById(id: string): Promise<number> {
-    return this.categoryModel.countDocuments({ _id: id }).exec();
+    return await this.categoryModel.countDocuments({ _id: id }).exec();
   }
 
   async create(data: CreateCategoryRecord): Promise<CategoryEntity> {
@@ -63,6 +65,8 @@ export class CategoriesRepository {
     id: string,
     data: UpdateCategoryRecord,
   ): Promise<{ updated: true } | null> {
+    if (Types.ObjectId.isValid(id) === false) return null;
+
     const doc = await this.categoryModel
       .findByIdAndUpdate(id, data, { new: true })
       .lean()
@@ -72,11 +76,14 @@ export class CategoriesRepository {
   }
 
   async deleteById(id: string): Promise<{ deleted: true } | null> {
+    if (Types.ObjectId.isValid(id) === false) return null;
+
     const res = await this.categoryModel.deleteOne({ _id: id }).exec();
     return res.deletedCount === 1 ? { deleted: true } : null;
   }
 
   async IsExist(id: string): Promise<boolean> {
+    if (Types.ObjectId.isValid(id) === false) return false;
     return await this.categoryModel.exists({ _id: id }).then(Boolean);
   }
 

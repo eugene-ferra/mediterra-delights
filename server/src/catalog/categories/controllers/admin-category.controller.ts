@@ -26,7 +26,9 @@ export class AdminCategoryController {
   async getAllCategories(
     @Res({ passthrough: true }) res: Response,
   ): Promise<CategoryEntity[]> {
-    const categories = await this.categoryService.findAll();
+    const categories = await this.categoryService.findAll({
+      includeInactive: true,
+    });
     return categories;
   }
 

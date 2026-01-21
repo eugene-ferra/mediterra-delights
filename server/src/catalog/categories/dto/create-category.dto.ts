@@ -1,12 +1,12 @@
 import { IsBoolean, IsNotEmpty, MaxLength, MinLength } from 'class-validator';
 
 export class CreateCategoryDto {
-  @MaxLength(50, { message: 'Title cannot exceed 50 characters.' })
-  @MinLength(2, { message: 'Title must be at least 2 characters long.' })
-  @IsNotEmpty({ message: 'Title is required.' })
+  @MaxLength(50, { message: 'Title too long. Please shorten it.' })
+  @MinLength(2, { message: 'Title too short. Please lengthen it.' })
+  @IsNotEmpty({ message: 'Please provide a title for the category.' })
   title!: string;
 
-  @IsBoolean({ message: 'isActive must be a boolean value.' })
-  @IsNotEmpty({ message: 'isActive is required.' })
+  @IsBoolean({ message: 'Please, mark new category as active or inactive.' })
+  @IsNotEmpty({ message: 'Please, mark new category as active or inactive.' })
   isActive!: boolean;
 }

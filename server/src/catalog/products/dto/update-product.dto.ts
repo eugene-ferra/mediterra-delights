@@ -1,7 +1,7 @@
 import {
   IsArray,
   IsBoolean,
-  IsMongoId,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -10,95 +10,133 @@ import {
   MinLength,
   ValidateNested,
   IsObject,
+  IsMongoId,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { IsLessThan } from 'src/common/ validators/is-less-than.validator';
 
 export class NutrientsDto {
+  @Min(0, {
+    message: 'Please enter a value greater than or equal to 0 for calories.',
+  })
+  @IsNumber({}, { message: 'Please enter a valid number for calories.' })
   @IsOptional()
-  @Min(0, { message: 'Calories must be more than 0.' })
-  @IsNumber({}, { message: 'Calories must be a number.' })
   calories?: number;
 
+  @Min(0, {
+    message:
+      'Please enter a value greater than or equal to 0 for carbohydrates.',
+  })
+  @IsNumber({}, { message: 'Please enter a valid number for carbohydrates.' })
   @IsOptional()
-  @Min(0, { message: 'Carbohydrates must be more than 0.' })
-  @IsNumber({}, { message: 'Carbohydrates must be a number.' })
   carbohydrates?: number;
 
+  @Min(0, {
+    message: 'Please enter a value greater than or equal to 0 for protein.',
+  })
+  @IsNumber({}, { message: 'Please enter a valid number for protein.' })
   @IsOptional()
-  @Min(0, { message: 'Protein must be more than 0.' })
-  @IsNumber({}, { message: 'Protein must be a number.' })
   protein?: number;
 
+  @Min(0, {
+    message: 'Please enter a value greater than or equal to 0 for fats.',
+  })
+  @IsNumber({}, { message: 'Please enter a valid number for fats.' })
   @IsOptional()
-  @Min(0, { message: 'Fats must be more than 0.' })
-  @IsNumber({}, { message: 'Fats must be a number.' })
   fats?: number;
 }
 
 export class UpdateProductDto {
-  @IsOptional()
-  @MinLength(2, { message: 'Title must be at least 2 characters long.' })
-  @MaxLength(100, { message: 'Title cannot exceed 100 characters.' })
-  @IsString()
-  title?: string;
-
-  @IsOptional()
-  @IsMongoId({ message: 'categoryId must be a valid MongoDB ObjectId.' })
-  categoryId?: string;
-
-  @IsOptional()
-  @MinLength(10, {
-    message: 'Description must be at least 10 characters long.',
+  @MinLength(2, {
+    message: 'Title too short. Please enter at least 2 characters.',
   })
-  @IsString()
-  description?: string;
-
+  @MaxLength(100, {
+    message: 'Title too long. Please enter no more than 100 characters.',
+  })
   @IsOptional()
-  @MaxLength(10000, { message: 'Full text cannot exceed 10000 characters.' })
-  @IsString()
+  title!: string;
+
+  @IsMongoId({ message: 'Please choose a valid category.' })
+  @IsOptional()
+  categoryId!: string;
+
+  @MinLength(10, {
+    message: 'Description too short. Please enter at least 10 characters.',
+  })
+  @MaxLength(3000, {
+    message: 'Description too long. Please enter no more than 3000 characters.',
+  })
+  @IsString({ message: 'Please enter a valid description.' })
+  @IsOptional()
+  description!: string;
+
+  @MinLength(10, {
+    message: 'Full information too short. Please enter at least 10 characters.',
+  })
+  @MaxLength(10000, {
+    message:
+      'Full information too long. Please enter no more than 10000 characters.',
+  })
+  @IsString({ message: 'Please enter valid full information.' })
+  @IsOptional()
   fullText?: string;
 
+  @Min(0, {
+    message: 'Please enter a value greater than or equal to 0 for weight.',
+  })
+  @IsNumber({}, { message: 'Please enter a valid number for weight.' })
   @IsOptional()
-  @Min(0, { message: 'Weight must be more than 0.' })
-  @IsNumber({}, { message: 'Weight must be a number.' })
-  weight?: number;
+  weight!: number;
 
+  @Min(0, {
+    message: 'Please enter a value greater than or equal to 0 for price.',
+  })
+  @IsNumber({}, { message: 'Please enter a valid number for price.' })
   @IsOptional()
-  @Min(0, { message: 'Price must be more than 0.' })
-  @IsNumber({}, { message: 'Price must be a number.' })
-  price?: number;
+  price!: number;
 
-  @IsOptional()
-  @Min(0, { message: 'Discount price must be more than 0.' })
-  @IsNumber({}, { message: 'Discount price must be a number.' })
   @IsLessThan('price', {
     message: 'Discount price must be less than the regular price.',
   })
+  @Min(0, {
+    message:
+      'Please enter a value greater than or equal to 0 for discount price.',
+  })
+  @IsNumber({}, { message: 'Please enter a valid number for discount price.' })
+  @IsOptional()
   discountPrice?: number;
 
-  @IsOptional()
-  @IsObject({ message: 'nutrients must be an object.' })
+  @IsObject({ message: 'Please enter a valid nutrients information.' })
   @ValidateNested()
   @Type(() => NutrientsDto)
+  @IsOptional()
   nutrients?: NutrientsDto;
 
+  @IsBoolean({ message: 'Please mark if the product is vegan or not.' })
   @IsOptional()
-  @IsBoolean({ message: 'isVegan must be a boolean value.' })
-  isVegan?: boolean;
+  isVegan!: boolean;
 
+  @Min(0, {
+    message: 'Please enter a value greater than or equal to 0 for cook time.',
+  })
+  @IsNumber({}, { message: 'Please enter a valid number for cook time.' })
   @IsOptional()
-  @Min(0, { message: 'Cook time must be more than 0.' })
-  @IsNumber({}, { message: 'Cook time must be a number.' })
-  cookTime?: number;
+  cookTime!: number;
 
+  @IsBoolean({ message: 'Please mark if the product is new or not.' })
   @IsOptional()
-  @IsBoolean({ message: 'isNewProduct must be a boolean value.' })
-  isNewProduct?: boolean;
+  isNewProduct!: boolean;
 
+  @IsArray({ message: 'Please enter a valid array for compound.' })
+  @IsString({
+    each: true,
+    message: 'Please enter valid information for each compound item.',
+  })
   @IsOptional()
-  @IsArray({ message: 'Compound must be an array.' })
-  @IsString({ each: true, message: 'Each compound item must be a string.' })
   compound?: string[];
+
+  @IsBoolean({ message: 'Please mark if the product is active or not.' })
+  @IsOptional()
+  isActive!: boolean;
 }

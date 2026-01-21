@@ -1,7 +1,7 @@
 import {
-  BadRequestException,
   Controller,
   Get,
+  NotFoundException,
   Param,
   Query,
   Res,
@@ -36,7 +36,7 @@ export class PublicProductsController {
   ): Promise<ProductEntity> {
     const product = await this.productsService.findOne(id);
     if (!product) {
-      throw new BadRequestException('Product not found');
+      throw new NotFoundException('Product not found');
     }
     return product;
   }
