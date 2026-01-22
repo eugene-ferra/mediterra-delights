@@ -188,6 +188,13 @@ export class ProductsRepository {
       .exec();
   }
 
+  async isExists(id: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(id)) return false;
+
+    const isExist = await this.productModel.exists({ _id: id });
+    return !!isExist;
+  }
+
   isValidProductId(id: string): boolean {
     return Types.ObjectId.isValid(id);
   }

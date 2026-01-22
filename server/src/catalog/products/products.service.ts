@@ -214,4 +214,20 @@ export class ProductsService {
 
     return docs;
   }
+
+  async exists(id: string): Promise<boolean> {
+    return await this.productsRepo.isExists(id);
+  }
+
+  async updateStats(
+    productId: string,
+    avgRating: number,
+    reviewCount: number,
+  ): Promise<{ updated: true }> {
+    await this.productsRepo.updateById(productId, {
+      avgRating,
+      reviewCount,
+    });
+    return { updated: true };
+  }
 }

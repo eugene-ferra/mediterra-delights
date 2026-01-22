@@ -4,13 +4,15 @@ export type ReviewsSortKey =
   | 'isModerated'
   | 'updatedAt';
 
-export type SortOrder = 'asc' | 'desc';
-
 export type FindManyReviewsQuery = Partial<{
   productId: string;
   userId: string;
   isModerated: boolean;
-  rating: number;
-  ratingGte: number;
-  ratingLte: number;
 }>;
+
+export type FindManyReviewsDbQuery = {
+  match: Record<string, any>;
+  sort: Record<string, 1 | -1>;
+  page: number;
+  limit: number;
+};

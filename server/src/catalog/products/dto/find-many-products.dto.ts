@@ -9,27 +9,18 @@ import {
   Min,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-
-const toInt = (v: unknown) => (v === undefined ? undefined : Number(v));
-const toBool = (v: unknown) => {
-  if (v === undefined) return undefined;
-  if (v === true || v === false) return v;
-  const s = String(v).toLowerCase().trim();
-  if (s === 'true' || s === '1') return true;
-  if (s === 'false' || s === '0') return false;
-  return v;
-};
-const toNum = (v: unknown) => (v === undefined ? undefined : Number(v));
+import { toNum } from 'src/common/ validators/to-num';
+import { toBool } from 'src/common/ validators/to-bool';
 
 export class FindManyProductsQueryDto {
   @IsOptional()
-  @Transform(({ value }) => toInt(value))
+  @Transform(({ value }) => toNum(value))
   @IsInt()
   @Min(1)
   page?: number;
 
   @IsOptional()
-  @Transform(({ value }) => toInt(value))
+  @Transform(({ value }) => toNum(value))
   @IsInt()
   @Min(1)
   @Max(100)

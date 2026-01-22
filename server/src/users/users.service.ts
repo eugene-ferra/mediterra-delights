@@ -143,4 +143,8 @@ export class UsersService {
 
     return { deleted: true };
   }
+
+  async isExist(id: string): Promise<boolean> {
+    return await this.userModel.exists({ _id: id }).then((exists) => !!exists);
+  }
 }

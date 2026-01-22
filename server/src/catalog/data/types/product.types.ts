@@ -17,4 +17,7 @@ export type CreateProductRecord = Omit<
   categoryId: string;
 };
 
-export type UpdateProductRecord = Partial<CreateProductRecord>;
+export type UpdateProductRecord = Partial<CreateProductRecord> & {
+  avgRating?: number;
+  reviewCount?: number;
+};

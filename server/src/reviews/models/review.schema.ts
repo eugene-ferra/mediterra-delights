@@ -1,13 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { ReviewStatus } from '../types/review-status.enum';
 
 export type ReviewDocument = HydratedDocument<Review>;
-
-export enum ReviewStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-}
 
 @Schema()
 export class Review {

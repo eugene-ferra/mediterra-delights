@@ -2,6 +2,7 @@ import {
   IsMongoId,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   Max,
   MaxLength,
@@ -9,18 +10,21 @@ import {
 } from 'class-validator';
 
 export class CreateReviewDto {
-  @IsMongoId({ message: 'Invalid product ID' })
-  @IsNotEmpty({ message: 'Product ID is required' })
+  @IsMongoId({ message: 'Please provide a valid product id' })
+  @IsNotEmpty({ message: 'Please specify a product' })
   productId!: string;
 
-  @Min(1, { message: 'Rating must be at least 1' })
-  @Max(5, { message: 'Rating must be at most 5' })
-  @IsNumber({}, { message: 'Rating must be a number' })
-  @IsNotEmpty({ message: 'Rating is required' })
+  @Min(1, { message: 'Please provide a rating of at least 1' })
+  @Max(5, { message: 'Please provide a rating of at most 5' })
+  @IsNumber({}, { message: 'Please provide a valid number for rating' })
+  @IsNotEmpty({ message: 'Please provide a rating' })
   rating!: number;
 
-  @MaxLength(1000, { message: 'Review text must be at most 1000 characters' })
-  @IsString({ message: 'Review text must be a string' })
-  @IsNotEmpty({ message: 'Review text is required' })
+  @MaxLength(1000, {
+    message:
+      'Review is too long. Please shorten it to 1000 characters or less.',
+  })
+  @IsString({ message: 'Please provide a valid review text' })
+  @IsOptional()
   review?: string;
 }

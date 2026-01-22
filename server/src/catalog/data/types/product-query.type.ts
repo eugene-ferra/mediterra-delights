@@ -1,3 +1,5 @@
+import { SortOrder } from 'src/common/types/sort-order.type';
+
 export type ProductsVisibility = {
   includeInactiveProducts: boolean;
   includeInactiveCategories: boolean;
@@ -9,8 +11,6 @@ export type ProductsSortKey =
   | 'avgRating'
   | 'reviewCount'
   | 'title';
-
-export type SortOrder = 'asc' | 'desc';
 
 export type FindManyProductsQuery = {
   // pagination
