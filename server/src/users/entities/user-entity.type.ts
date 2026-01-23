@@ -1,25 +1,27 @@
 import { Types } from 'mongoose';
+import { UserRole } from '../types/user-role.enum';
 
 export type UserEntity = {
-  id: Types.ObjectId;
+  id: string;
   name: string;
   lastName: string;
   email: string;
   phone: string;
-  role: 'user' | 'admin';
+  role: UserRole;
   password?: string;
   avatar: {
     jpg?: string;
     webp?: string;
     avif?: string;
   };
-  savedProducts: Types.ObjectId[];
-  likedArticles: Types.ObjectId[];
-  savedArticles: Types.ObjectId[];
-  addedReviews: Types.ObjectId[];
-  addedComments: Types.ObjectId[];
+  savedProducts: string[];
+  likedArticles: string[];
+  savedArticles: string[];
+  addedReviews: string[];
+  addedComments: string[];
   cart: { id: Types.ObjectId; quantity: number }[];
   orders: Types.ObjectId[];
   resetToken?: string;
   resetTokenExpiresAt?: Date;
 };
+``;

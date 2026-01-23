@@ -95,9 +95,7 @@ export class AuthService {
     userAgent?: string;
     ip?: string;
   }): Promise<UserTokens> {
-    const userWithPass = await this.usersService.findByEmailWithPassword(
-      params.dto.email,
-    );
+    const userWithPass = await this.usersService.findByEmail(params.dto.email);
 
     if (!userWithPass || !userWithPass.password) {
       throw new UnauthorizedException('Invalid email or password');

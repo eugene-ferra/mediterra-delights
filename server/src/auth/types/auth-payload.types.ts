@@ -1,8 +1,8 @@
-import { Types } from 'mongoose';
+import { UserRole } from 'src/users/types/user-role.enum';
 
 export type UserPayload = {
-  _id: Types.ObjectId;
-  role: 'user' | 'admin';
+  _id: string;
+  role: UserRole;
 };
 
 export type RefreshTokenPayload = {

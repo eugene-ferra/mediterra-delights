@@ -7,7 +7,7 @@ export type MetaData = {
 };
 
 export type UpsertSessionParams = {
-  userId: Types.ObjectId;
+  userId: string;
   deviceId: string;
   refreshToken: string; // raw token
   userAgent?: string;

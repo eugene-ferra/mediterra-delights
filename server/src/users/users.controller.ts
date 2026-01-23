@@ -11,7 +11,7 @@ import { UsersService } from './users.service';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { User } from 'src/common/decorators/user.decorator';
 import { AccessTokenPayload } from 'src/common/types/access-token-payload.type';
-import { UserEntity } from './types/user-entity.type';
+import { UserEntity } from './entities/user-entity.type';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { Response } from 'express';

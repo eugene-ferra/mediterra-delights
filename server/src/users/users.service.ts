@@ -1,150 +1,87 @@
-// src/users/users.service.ts
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
-import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, UserDocument } from './schema/user.schema';
-import { UserEntity } from './types/user-entity.type';
+import { UserEntity } from './entities/user-entity.type';
+import { UserRepository } from './repositories/user.repository';
+import { UserRole } from './types/user-role.enum';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectModel(User.name) private readonly userModel: Model<User>,
-  ) {}
-
-  private ensureObjectId(id: string) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new NotFoundException('User not found');
-    }
-  }
-
-  private isDuplicateKeyError(err: unknown): err is { code: number } {
-    return typeof err === 'object' && err !== null && 'code' in err;
-  }
-
-  private toEntity(user: UserDocument): UserEntity {
-    return {
-      id: user._id,
-      name: user.name,
-      lastName: user.lastName,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      avatar: user.avatar,
-      savedProducts: user.savedProducts,
-      password: user.password,
-      likedArticles: user.likedArticles,
-      savedArticles: user.savedArticles,
-      addedReviews: user.addedReviews,
-      addedComments: user.addedComments,
-      cart: user.cart,
-      orders: user.orders,
-      resetToken: user.resetToken,
-      resetTokenExpiresAt: user.resetTokenExpiresAt,
-    };
-  }
+  constructor(private readonly userRepo: UserRepository) {}
 
   async create(dto: CreateUserDto): Promise<UserEntity> {
-    // Fast pre-check (still need DB unique index for race conditions)
-    const exists = await this.userModel.exists({ email: dto.email }).exec();
+    const exists = await this.userRepo.findByEmail(dto.email);
 
     if (exists)
       throw new ConflictException('User with this email already exists');
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
 
-    try {
-      const created = await this.userModel.create({
-        ...dto,
-        role: 'user',
-        password: hashedPassword,
-      });
+    const created = await this.userRepo.create({
+      name: dto.name,
+      lastName: dto.lastName,
+      email: dto.email,
+      password: hashedPassword,
+      role: UserRole.USER,
+    });
 
-      return this.toEntity(created);
-    } catch (err: unknown) {
-      // Race-condition safe: unique index violation
-      if (this.isDuplicateKeyError(err) && (err as any).code === 11000) {
-        throw new ConflictException('User with this email already exists');
-      }
-      throw err;
-    }
+    return created;
   }
 
   async findByEmail(email: string): Promise<UserEntity | null> {
-    const user = await this.userModel.findOne({ email }).exec();
-    if (!user) return null;
-    return this.toEntity(user);
-  }
-
-  async findByEmailWithPassword(email: string): Promise<UserEntity | null> {
-    const user = await this.userModel.findOne({ email }).exec();
-    if (!user) return null;
-    return this.toEntity(user);
+    return this.userRepo.findByEmail(email);
   }
 
   async findById(id: string): Promise<UserEntity> {
-    this.ensureObjectId(id);
-    const user = await this.userModel.findById(id).exec();
+    const user = await this.userRepo.findById(id);
     if (!user) throw new NotFoundException('User not found');
-    return this.toEntity(user);
+    return user;
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<UserEntity> {
-    this.ensureObjectId(id);
-
     const payload: UpdateUserDto = {};
     if (dto.name !== undefined) payload.name = dto.name;
     if (dto.lastName !== undefined) payload.lastName = dto.lastName;
     if (dto.phone !== undefined) payload.phone = dto.phone;
-    // avatar update should be handled separately (files module), so not here for MVP
 
-    const updated = await this.userModel
-      .findByIdAndUpdate(id, payload, {
-        new: true,
-        runValidators: true,
-      })
-      .exec();
+    const updated = await this.userRepo.update(id, payload);
 
     if (!updated) throw new NotFoundException('User not found');
-    return this.toEntity(updated);
+    return updated;
   }
 
   async changePassword(
     id: string,
     dto: UpdateUserPasswordDto,
   ): Promise<{ changed: true }> {
-    this.ensureObjectId(id);
-
-    const user = await this.userModel.findById(id).exec();
+    const user = await this.userRepo.findById(id);
     if (!user) throw new NotFoundException('User not found');
 
     const ok = await bcrypt.compare(dto.oldPassword, user.password as string);
-    if (!ok) throw new BadRequestException('Incorrect current password');
+    if (!ok)
+      throw new UnprocessableEntityException('Incorrect current password');
 
-    user.password = await bcrypt.hash(dto.newPassword, 12);
-    await user.save();
+    const newPass = await bcrypt.hash(dto.newPassword, 12);
+
+    await this.userRepo.update(id, { password: newPass });
 
     return { changed: true };
   }
 
   async delete(id: string): Promise<{ deleted: true }> {
-    this.ensureObjectId(id);
-
-    const deleted = await this.userModel.findByIdAndDelete(id).lean().exec();
-    if (!deleted) throw new NotFoundException('User not found');
-
+    const deletedUser = await this.userRepo.delete(id);
+    if (!deletedUser) throw new NotFoundException('User not found');
     return { deleted: true };
   }
 
   async isExist(id: string): Promise<boolean> {
-    return await this.userModel.exists({ _id: id }).then((exists) => !!exists);
+    return this.userRepo.isExist(id);
   }
 }
