@@ -5,6 +5,7 @@ import {
   RefreshSessionSchema,
 } from './schema/refresh-session.schema';
 import { SessionsService } from './session.service';
+import { SessionRepository } from './repositories/session.repository';
 
 @Module({
   imports: [
@@ -12,7 +13,7 @@ import { SessionsService } from './session.service';
       { name: RefreshSession.name, schema: RefreshSessionSchema },
     ]),
   ],
-  providers: [SessionsService],
+  providers: [SessionsService, SessionRepository],
   exports: [SessionsService],
 })
 export class SessionModule {}

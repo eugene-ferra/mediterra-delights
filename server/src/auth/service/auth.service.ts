@@ -19,7 +19,6 @@ import {
 import { randomUUID } from 'crypto';
 import { AccessTokenPayload } from 'src/common/types/access-token-payload.type';
 import { SessionsService } from 'src/session/session.service';
-import { Types } from 'mongoose';
 
 @Injectable()
 export class AuthService {
@@ -148,27 +147,21 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const userIdStr = payload?.sub;
+    const userId = payload?.sub;
     const deviceId = payload?.deviceId;
 
-    if (!userIdStr || !deviceId) {
+    if (!userId || !deviceId) {
       throw new UnauthorizedException('Invalid refresh token payload');
     }
 
-    let userId: Types.ObjectId;
-    try {
-      userId = new Types.ObjectId(userIdStr);
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token payload');
-    }
+    const session = await this.sessionsService.findSession(userId, deviceId);
 
-    const session = await this.sessionsService.validateSession({
-      userId,
-      deviceId,
-      refreshToken: params.refreshToken,
-    });
+    const isValid = await this.sessionsService.isSessionValid(
+      session,
+      params.refreshToken,
+    );
 
-    if (!session) {
+    if (!isValid) {
       await this.sessionsService.removeAllSessions(userId);
       throw new UnauthorizedException('Refresh token reuse detected');
     }
@@ -181,11 +174,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token expired');
     }
 
-    const user = await this.usersService.findById(userIdStr);
-    if (!user) {
-      await this.sessionsService.removeAllSessions(userId);
-      throw new UnauthorizedException('User not found');
-    }
+    const user = await this.usersService.findById(userId);
 
     const newAccessToken = this.signAccessToken({
       _id: user.id,
@@ -218,17 +207,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const userIdStr = payload?.sub;
+    const userId = payload?.sub;
     const deviceId = payload?.deviceId;
 
-    if (!userIdStr || !deviceId) {
-      throw new UnauthorizedException('Invalid refresh token payload');
-    }
-
-    let userId: Types.ObjectId;
-    try {
-      userId = new Types.ObjectId(userIdStr);
-    } catch {
+    if (!userId || !deviceId) {
       throw new UnauthorizedException('Invalid refresh token payload');
     }
 
@@ -236,13 +218,6 @@ export class AuthService {
   }
 
   async logoutAll(userId: string): Promise<void> {
-    let userObjId: Types.ObjectId;
-    try {
-      userObjId = new Types.ObjectId(userId);
-    } catch {
-      throw new UnauthorizedException('Invalid user id');
-    }
-
-    await this.sessionsService.removeAllSessions(userObjId);
+    await this.sessionsService.removeAllSessions(userId);
   }
 }

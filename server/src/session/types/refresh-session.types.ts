@@ -16,7 +16,7 @@ export type UpsertSessionParams = {
 };
 
 export type ValidateSessionParams = {
-  userId: Types.ObjectId;
+  userId: string;
   deviceId: string;
   refreshToken: string; // raw token
 };

@@ -1,70 +1,71 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { Model, Types } from 'mongoose';
-import { RefreshSession } from './schema/refresh-session.schema';
-import {
-  UpsertSessionParams,
-  ValidateSessionParams,
-} from './types/refresh-session.types';
+import { UpsertSessionParams } from './types/refresh-session.types';
 import { createHash } from 'crypto';
+import { SessionRepository } from './repositories/session.repository';
+import { SessionEntity } from './entities/session-entity.type';
 
 @Injectable()
 export class SessionsService {
-  constructor(
-    @InjectModel(RefreshSession.name)
-    private readonly sessionModel: Model<RefreshSession>,
-  ) {}
+  constructor(private readonly sessionRepo: SessionRepository) {}
 
-  async upsertSession(params: UpsertSessionParams): Promise<void> {
-    const pre = createHash('sha256').update(params.refreshToken).digest('hex');
+  async upsertSession(params: UpsertSessionParams): Promise<SessionEntity> {
+    const { refreshToken, userAgent, ip, expiresAt, userId, deviceId } = params;
+
+    const pre = createHash('sha256').update(refreshToken).digest('hex');
     const refreshTokenHash = await bcrypt.hash(pre, 12);
 
-    await this.sessionModel.findOneAndUpdate(
-      { userId: params.userId, deviceId: params.deviceId },
+    return await this.sessionRepo.upsertOne(
+      { userId, deviceId },
       {
-        $set: {
-          refreshTokenHash,
-          userAgent: params.userAgent ?? '',
-          ip: params.ip ?? '',
-          expiresAt: params.expiresAt,
-          lastUsedAt: new Date(),
-        },
+        refreshTokenHash,
+        userAgent,
+        ip,
+        expiresAt,
       },
-      { new: true, upsert: true },
     );
   }
 
-  async validateSession(
-    params: ValidateSessionParams,
-  ): Promise<RefreshSession | null> {
-    const session = await this.sessionModel.findOne({
-      userId: params.userId,
-      deviceId: params.deviceId,
-    });
-
-    if (!session) return null;
-
-    const pre = createHash('sha256').update(params.refreshToken).digest('hex');
+  async isSessionValid(
+    session: SessionEntity,
+    refreshToken: string,
+  ): Promise<boolean> {
+    const pre = createHash('sha256').update(refreshToken).digest('hex');
 
     const ok = await bcrypt.compare(pre, session.refreshTokenHash);
-    if (!ok) return null;
+    if (!ok) return false;
 
-    return session.toObject();
+    return true;
   }
 
-  async removeSession(userId: Types.ObjectId, deviceId: string): Promise<void> {
-    await this.sessionModel.deleteOne({ userId, deviceId });
+  async findSession(userId: string, deviceId: string): Promise<SessionEntity> {
+    const session = await this.sessionRepo.findOne(userId, deviceId);
+    if (!session) throw new NotFoundException('Session not found');
+    return session;
   }
 
-  async removeAllSessions(userId: Types.ObjectId): Promise<void> {
-    await this.sessionModel.deleteMany({ userId });
+  async removeSession(
+    userId: string,
+    deviceId: string,
+  ): Promise<{ deleted: true }> {
+    const res = await this.sessionRepo.deleteOne(userId, deviceId);
+
+    if (!res) throw new NotFoundException('Session not found');
+
+    return { deleted: true };
   }
 
-  async touch(userId: Types.ObjectId, deviceId: string): Promise<void> {
-    await this.sessionModel.updateOne(
-      { userId, deviceId },
-      { $set: { lastUsedAt: new Date() } },
-    );
+  async removeAllSessions(userId: string): Promise<{ deletedCount: number }> {
+    const deletedCount = await this.sessionRepo.deleteMany(userId);
+
+    return { deletedCount: deletedCount ?? 0 };
+  }
+
+  async touch(userId: string, deviceId: string): Promise<{ updated: true }> {
+    const res = await this.sessionRepo.updateUseTime(userId, deviceId);
+
+    if (!res) throw new NotFoundException('Session not found');
+
+    return { updated: true };
   }
 }
