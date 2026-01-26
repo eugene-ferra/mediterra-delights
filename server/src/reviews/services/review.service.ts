@@ -10,7 +10,7 @@ import { ReviewsRepository } from '../repositories/review.repository';
 
 import { ReviewEntity } from '../entities/review-entity.type';
 import { ProductsService } from 'src/catalog/products/products.service';
-import { UsersService } from 'src/users/users.service';
+import { UsersService } from 'src/auth/users/users.service';
 import { ReviewStatus } from '../types/review-status.enum';
 import { FindManyReviewsQueryDto } from '../dto/find-many-reviews.dto';
 

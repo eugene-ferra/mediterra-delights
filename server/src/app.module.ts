@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { UsersModule } from './users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
@@ -27,10 +26,9 @@ import { ReviewModule } from './reviews/review.module';
         },
       }),
     }),
-    UsersModule,
-    AuthModule,
-    CategoryModule,
     ProductModule,
+    CategoryModule,
+    AuthModule,
     ReviewModule,
   ],
   controllers: [],

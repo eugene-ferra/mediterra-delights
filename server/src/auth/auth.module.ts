@@ -4,8 +4,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import type { SignOptions } from 'jsonwebtoken';
 import { AuthController } from './auth.controller';
 import { AuthService } from './service/auth.service';
-import { UsersModule } from 'src/users/users.module';
-import { SessionModule } from 'src/session/session.module';
+import { UsersModule } from 'src/auth/users/users.module';
+import { SessionModule } from 'src/auth/session/session.module';
 
 @Module({
   imports: [ConfigModule, SessionModule, UsersModule],
@@ -27,5 +27,6 @@ import { SessionModule } from 'src/session/session.module';
     },
     AuthService,
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}

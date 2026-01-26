@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 
-import { UsersService } from 'src/users/users.service';
+import { UsersService } from 'src/auth/users/users.service';
 import { RegisterDto } from '../dto/register.dto';
 import { LoginDto } from '../dto/login.dto';
 import {
@@ -18,7 +18,7 @@ import {
 } from '../types/auth-payload.types';
 import { randomUUID } from 'crypto';
 import { AccessTokenPayload } from 'src/common/types/access-token-payload.type';
-import { SessionsService } from 'src/session/session.service';
+import { SessionsService } from 'src/auth/session/session.service';
 
 @Injectable()
 export class AuthService {
