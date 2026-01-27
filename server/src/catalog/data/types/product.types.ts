@@ -12,7 +12,7 @@ export type ProductLeanWithCategory = Omit<Product, 'categoryId'> & {
 
 export type CreateProductRecord = Omit<
   Product,
-  'avgRating' | 'reviewCount' | 'categoryId' | 'createdAt'
+  'avgRating' | 'reviewCount' | 'categoryId' | 'createdAt' | 'updatedAt'
 > & {
   categoryId: string;
 };

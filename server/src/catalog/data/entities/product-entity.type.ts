@@ -1,6 +1,6 @@
-import { ImageSet, OptionalImageSet } from 'src/common/types/image-set.type';
 import { Nutrients } from 'src/common/types/nutrients.type';
 import { CategoryEntity } from './category-entity.type';
+import { ImageAssetEntity } from './image-asset.entity';
 
 export type ProductEntity = {
   id: string;
@@ -11,8 +11,8 @@ export type ProductEntity = {
   fullText?: string;
   avgRating: number;
   reviewCount: number;
-  imgCover: ImageSet;
-  images: OptionalImageSet[];
+  imgCover: ImageAssetEntity;
+  images: ImageAssetEntity[];
   weight: number;
   price: number;
   discountPrice?: number;

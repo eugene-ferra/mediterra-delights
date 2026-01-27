@@ -34,7 +34,7 @@ export class ProductsRepository {
       avgRating: doc.avgRating,
       reviewCount: doc.reviewCount,
       imgCover: doc.imgCover,
-      images: doc.images,
+      images: doc.images || [],
       weight: doc.weight,
       price: doc.price,
       discountPrice: doc.discountPrice,

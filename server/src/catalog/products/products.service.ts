@@ -43,21 +43,6 @@ export class ProductsService {
       );
     }
 
-    // TODO: Replace with actual image upload logic
-    const imgCover = {
-      jpg: 'placeholder.jpg',
-      webp: 'placeholder.webp',
-      avif: 'placeholder.avif',
-    };
-
-    const images = [
-      {
-        jpg: 'placeholder.jpg',
-        webp: 'placeholder.webp',
-        avif: 'placeholder.avif',
-      },
-    ];
-
     const nutrients = data.nutrients || {};
 
     let created;
@@ -65,8 +50,11 @@ export class ProductsService {
     created = await this.productsRepo.create({
       ...data,
       slug,
-      imgCover,
-      images,
+      imgCover: {
+        originalKey: '', // to be updated later
+        originalWidth: 800,
+        originalHeight: 800,
+      },
       nutrients,
     });
 

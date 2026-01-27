@@ -1,50 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { ImageAsset, ImageAssetSchema } from './image-asset.schema';
+import { Nutrients, NutrientsSchema } from './nutrients.schema';
 
 export type ProductDocument = HydratedDocument<Product>;
-
-@Schema({ _id: false })
-export class ImageSet {
-  @Prop({ required: true })
-  jpg!: string;
-
-  @Prop({ required: true })
-  webp!: string;
-
-  @Prop({ required: true })
-  avif!: string;
-}
-export const ImageSetSchema = SchemaFactory.createForClass(ImageSet);
-
-@Schema({ _id: false })
-export class OptionalImageSet {
-  @Prop()
-  jpg?: string;
-
-  @Prop()
-  webp?: string;
-
-  @Prop()
-  avif?: string;
-}
-export const OptionalImageSetSchema =
-  SchemaFactory.createForClass(OptionalImageSet);
-
-@Schema({ _id: false })
-export class Nutrients {
-  @Prop()
-  calories?: number;
-
-  @Prop()
-  carbohydrates?: number;
-
-  @Prop()
-  protein?: number;
-
-  @Prop()
-  fats?: number;
-}
-export const NutrientsSchema = SchemaFactory.createForClass(Nutrients);
 
 @Schema({})
 export class Product {
@@ -74,11 +33,11 @@ export class Product {
   @Prop({ default: 0 })
   reviewCount!: number;
 
-  @Prop({ type: ImageSetSchema, required: true })
-  imgCover!: ImageSet;
+  @Prop({ type: ImageAssetSchema, required: true })
+  imgCover!: ImageAsset;
 
-  @Prop({ type: [OptionalImageSetSchema], default: [] })
-  images!: OptionalImageSet[];
+  @Prop({ type: [ImageAssetSchema], default: [] })
+  images?: ImageAsset[];
 
   @Prop({ required: true })
   weight!: number;
@@ -92,9 +51,7 @@ export class Product {
   @Prop({ type: NutrientsSchema, default: {} })
   nutrients!: Nutrients;
 
-  @Prop({
-    required: [true, 'Product must have a isVegan prorerty!'],
-  })
+  @Prop({ required: true })
   isVegan!: boolean;
 
   @Prop({ required: true })
@@ -111,6 +68,9 @@ export class Product {
 
   @Prop({ default: Date.now })
   createdAt!: Date;
+
+  @Prop()
+  updatedAt!: Date;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
