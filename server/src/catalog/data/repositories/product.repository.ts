@@ -1,15 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { Model, Types, QueryFilter } from 'mongoose';
 
 import { Product, ProductDocument } from '../models/product.schema';
 import { ProductEntity } from '../entities/product-entity.type';
 import {
   CreateProductRecord,
-  ProductLeanWithCategory,
   UpdateProductRecord,
 } from '../types/product.types';
-import { FindManyProductsDbQuery } from '../types/product-query.type';
+import { Category } from '../models/category.schema';
 
 @Injectable()
 export class ProductsRepository {
@@ -18,7 +17,11 @@ export class ProductsRepository {
     private readonly productModel: Model<ProductDocument>,
   ) {}
 
-  private toEntityFromLean(doc: ProductLeanWithCategory): ProductEntity {
+  private toEntity(
+    doc: Omit<Product, 'categoryId'> & { categoryId: Category },
+  ): ProductEntity {
+    console.log('doc.categoryId:', doc);
+
     return {
       id: String(doc._id),
       title: doc.title,
@@ -46,16 +49,59 @@ export class ProductsRepository {
     };
   }
 
+  private escapeRegex(input: string): string {
+    return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  private addRange(
+    where: Record<string, any>,
+    field: string,
+    min?: number,
+    max?: number,
+  ) {
+    if (min === undefined && max === undefined) return;
+    const r: any = {};
+    if (min !== undefined) r.$gte = min;
+    if (max !== undefined) r.$lte = max;
+    where[field] = r;
+  }
+
+  private buildWhere(query: ProductFindQuery): QueryFilter<ProductDocument> {
+    const f = query.filters ?? {};
+    const where: Record<string, any> = {};
+
+    if (typeof f.q === 'string' && f.q.trim()) {
+      const needle = this.escapeRegex(f.q.trim());
+      where.title = { $regex: needle, $options: 'i' };
+    }
+
+    if (f.categoryId) where.categoryId = f.categoryId;
+
+    if (typeof f.isVegan === 'boolean') where.isVegan = f.isVegan;
+    if (typeof f.isNewProduct === 'boolean')
+      where.isNewProduct = f.isNewProduct;
+
+    if (typeof f.isActive === 'boolean') where.isActive = f.isActive;
+
+    if (typeof f.isCategoryActive === 'boolean') {
+      where.isCategoryActive = f.isCategoryActive;
+    }
+
+    this.addRange(where, 'avgRating', f.avgRatingMin, f.avgRatingMax);
+    this.addRange(where, 'reviewCount', f.reviewCountMin, f.reviewCountMax);
+    this.addRange(where, 'price', f.priceMin, f.priceMax);
+    this.addRange(where, 'weight', f.weightMin, f.weightMax);
+    this.addRange(where, 'cookTime', f.cookTimeMin, f.cookTimeMax);
+
+    return where;
+  }
+
   async create(data: CreateProductRecord): Promise<ProductEntity> {
     const created = await this.productModel.create(data);
 
-    const doc = await this.productModel
-      .findById(created._id)
-      .populate('categoryId')
-      .lean<ProductLeanWithCategory>()
-      .exec();
+    const full = await created.populate<{ categoryId: Category }>('categoryId');
 
-    return this.toEntityFromLean(doc!);
+    return this.toEntity(full);
   }
 
   async findById(id: string): Promise<ProductEntity | null> {
@@ -63,120 +109,107 @@ export class ProductsRepository {
 
     const doc = await this.productModel
       .findById(id)
-      .populate('categoryId')
-      .lean<ProductLeanWithCategory>()
+      .populate<{ categoryId: Category }>('categoryId')
       .exec();
 
     if (!doc) return null;
 
-    return this.toEntityFromLean(doc);
+    return this.toEntity(doc);
   }
 
   async findBySlug(slug: string): Promise<ProductEntity | null> {
     const doc = await this.productModel
       .findOne({ slug })
-      .populate('categoryId')
-      .lean<ProductLeanWithCategory>()
+      .populate<{ categoryId: Category }>('categoryId')
       .exec();
 
     if (!doc) return null;
 
-    return this.toEntityFromLean(doc);
+    return this.toEntity(doc);
   }
 
   async updateById(
     id: string,
     data: UpdateProductRecord,
-  ): Promise<{ updated: true } | null> {
+  ): Promise<ProductEntity | null> {
     if (!Types.ObjectId.isValid(id)) return null;
 
     const updatedDoc = await this.productModel
       .findByIdAndUpdate(id, { ...data }, { new: true })
+      .populate<{ categoryId: Category }>('categoryId')
       .exec();
 
     if (!updatedDoc) return null;
 
-    return { updated: true };
+    return this.toEntity(updatedDoc);
   }
 
-  async deleteById(id: string): Promise<{ deleted: true } | null> {
+  async deleteById(id: string): Promise<ProductEntity | null> {
     if (!Types.ObjectId.isValid(id)) return null;
 
-    const deletedDoc = await this.productModel.findByIdAndDelete(id).exec();
+    const deletedDoc = await this.productModel
+      .findByIdAndDelete(id)
+      .populate<{ categoryId: Category }>('categoryId')
+      .exec();
 
     if (!deletedDoc) return null;
 
-    return { deleted: true };
+    return this.toEntity(deletedDoc);
   }
 
-  async findMany(params: FindManyProductsDbQuery): Promise<{
+  async findMany(query: ProductFindQuery): Promise<{
     docs: ProductEntity[];
     total: number;
+    page: number;
+    limit: number;
   }> {
-    const { match, sort, page, limit, withTextScore, visibility } = params;
+    const page = Math.max(1, Number(query.page ?? 1));
+    const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
     const skip = (page - 1) * limit;
 
-    const pipeline: any[] = [
-      { $match: match },
+    const where = this.buildWhere(query);
 
-      ...(withTextScore
-        ? [{ $addFields: { score: { $meta: 'textScore' } } }]
-        : []),
+    const sortDir: 1 | -1 = query.sortOrder === 'asc' ? 1 : -1;
+    const sortKey = query.sortKey ?? 'createdAt';
 
-      {
-        $lookup: {
-          from: 'categories',
-          let: {
-            catId: {
-              $convert: {
-                input: '$categoryId',
-                to: 'objectId',
-                onError: null,
-                onNull: null,
-              },
-            },
-          },
-          pipeline: [
-            {
-              $match: {
-                $expr: visibility.includeInactiveCategories
-                  ? { $eq: ['$_id', '$$catId'] }
-                  : {
-                      $and: [
-                        { $eq: ['$_id', '$$catId'] },
-                        { $eq: ['$isActive', true] },
-                      ],
-                    },
-              },
-            },
-          ],
-          as: 'category',
-        },
-      },
-      { $unwind: '$category' },
-      { $addFields: { categoryId: '$category' } },
-      { $project: { category: 0 } },
-      { $sort: sort },
-      {
-        $facet: {
-          docs: [
-            { $skip: skip },
-            { $limit: limit },
-            { $project: { score: 0 } },
-          ],
-          meta: [{ $count: 'total' }],
-        },
-      },
-    ];
+    const allowedSortMap: Record<
+      NonNullable<ProductFindQuery['sortKey']>,
+      string
+    > = {
+      title: 'title',
+      price: 'price',
+      avgRating: 'avgRating',
+      reviewCount: 'reviewCount',
+      createdAt: 'createdAt',
+      updatedAt: 'updatedAt',
+      cookTime: 'cookTime',
+      weight: 'weight',
+      isNewProduct: 'isNewProduct',
+      isVegan: 'isVegan',
+      isActive: 'isActive',
+    };
 
-    const result = await this.productModel.aggregate(pipeline).exec();
+    const sortField = allowedSortMap[sortKey] ?? 'createdAt';
+    const sort = { [sortField]: sortDir, _id: sortDir };
 
-    const docsRaw = result?.[0]?.docs ?? [];
-    const total = result?.[0]?.meta?.[0]?.total ?? 0;
+    const [total, docs] = await Promise.all([
+      this.productModel.countDocuments(where).exec(),
+      this.productModel
+        .find(where)
+        .sort(sort)
+        .skip(skip)
+        .limit(limit)
+        .populate<{ categoryId: Category }>('categoryId')
+        .exec(),
+    ]);
+
+    console.log('docs:', docs);
 
     return {
-      docs: docsRaw.map((d: any) => this.toEntityFromLean(d)),
+      docs: docs.map((d) => this.toEntity(d)),
       total,
+      page,
+      limit,
     };
   }
 

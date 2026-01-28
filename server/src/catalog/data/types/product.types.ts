@@ -1,21 +1,9 @@
-import { Types } from 'mongoose';
 import { Product } from '../models/product.schema';
-import { Category } from '../models/category.schema';
-
-export type CategoryLean = Category & {
-  _id: Types.ObjectId;
-};
-export type ProductLeanWithCategory = Omit<Product, 'categoryId'> & {
-  _id: Types.ObjectId;
-  categoryId: CategoryLean;
-};
 
 export type CreateProductRecord = Omit<
   Product,
-  'avgRating' | 'reviewCount' | 'categoryId' | 'createdAt' | 'updatedAt'
-> & {
-  categoryId: string;
-};
+  'avgRating' | 'reviewCount' | 'createdAt' | 'updatedAt' | '_id' | 'categoryId'
+> & { categoryId: string };
 
 export type UpdateProductRecord = Partial<CreateProductRecord> & {
   avgRating?: number;

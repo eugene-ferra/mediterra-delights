@@ -12,7 +12,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductsRepository } from '../data/repositories/product.repository';
 import { CategoriesRepository } from '../data/repositories/category.repository';
 import { ProductEntity } from '../data/entities/product-entity.type';
-import { FindManyProductsQueryDto } from './dto/find-many-products.dto';
+import { UserFindProductsDto } from './dto/user-find-products.dto';
 
 @Injectable()
 export class ProductsService {
@@ -28,8 +28,8 @@ export class ProductsService {
       );
     }
 
-    const isCategoryExist = await this.categoriesRepo.IsExist(data.categoryId);
-    if (!isCategoryExist) {
+    const category = await this.categoriesRepo.findById(data.categoryId);
+    if (!category) {
       throw new UnprocessableEntityException(
         'Provided category does not exist.',
       );
@@ -56,6 +56,7 @@ export class ProductsService {
         originalHeight: 800,
       },
       nutrients,
+      isCategoryActive: category.isActive,
     });
 
     return created;
@@ -122,85 +123,119 @@ export class ProductsService {
     return { deleted: true };
   }
 
-  async findMany(
-    query: FindManyProductsQueryDto = {},
-    visibility = {
-      includeInactiveProducts: false,
-      includeInactiveCategories: false,
-    },
-  ): Promise<ProductEntity[]> {
-    const page = Math.max(1, Number(query.page ?? 1));
-    const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
+  // async findMany(
+  //   query: FindManyProductsQueryDto = {},
+  //   visibility = {
+  //     includeInactiveProducts: false,
+  //     includeInactiveCategories: false,
+  //   },
+  // ): Promise<ProductEntity[]> {
+  //   const page = Math.max(1, Number(query.page ?? 1));
+  //   const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
 
-    const sortBy = query.sortBy ?? 'createdAt';
-    const sortOrder = query.sortOrder ?? 'desc';
-    const sortDir: 1 | -1 = sortOrder === 'asc' ? 1 : -1;
+  //   const sortBy = query.sortBy ?? 'createdAt';
+  //   const sortOrder = query.sortOrder ?? 'desc';
+  //   const sortDir: 1 | -1 = sortOrder === 'asc' ? 1 : -1;
 
-    const sortFieldMap = {
-      createdAt: 'createdAt',
-      price: 'price',
-      avgRating: 'avgRating',
-      reviewCount: 'reviewCount',
-      title: 'title',
-    };
-    const sortField = sortFieldMap[sortBy];
+  //   const sortFieldMap = {
+  //     createdAt: 'createdAt',
+  //     price: 'price',
+  //     avgRating: 'avgRating',
+  //     reviewCount: 'reviewCount',
+  //     title: 'title',
+  //   };
+  //   const sortField = sortFieldMap[sortBy];
 
-    const match: Record<string, any> = {};
+  //   const match: Record<string, any> = {};
 
-    if (!visibility.includeInactiveProducts) {
-      match.isActive = true;
-    }
+  //   if (!visibility.includeInactiveProducts) {
+  //     match.isActive = true;
+  //   }
 
-    if (query.categoryId) match.categoryId = query.categoryId;
+  //   if (query.categoryId) match.categoryId = query.categoryId;
 
-    if (typeof query.isVegan === 'boolean') match.isVegan = query.isVegan;
-    if (typeof query.isNewProduct === 'boolean')
-      match.isNewProduct = query.isNewProduct;
+  //   if (typeof query.isVegan === 'boolean') match.isVegan = query.isVegan;
+  //   if (typeof query.isNewProduct === 'boolean')
+  //     match.isNewProduct = query.isNewProduct;
 
-    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
-      match.price = {};
-      if (query.minPrice !== undefined) {
-        const v = Number(query.minPrice);
-        match.price.$gte = v;
-      }
-      if (query.maxPrice !== undefined) {
-        const v = Number(query.maxPrice);
-        match.price.$lte = v;
-      }
-    }
+  //   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+  //     match.price = {};
+  //     if (query.minPrice !== undefined) {
+  //       const v = Number(query.minPrice);
+  //       match.price.$gte = v;
+  //     }
+  //     if (query.maxPrice !== undefined) {
+  //       const v = Number(query.maxPrice);
+  //       match.price.$lte = v;
+  //     }
+  //   }
 
-    if (query.minRating !== undefined) {
-      const v = Number(query.minRating);
-      match.avgRating = { $gte: v };
-    }
+  //   if (query.minRating !== undefined) {
+  //     const v = Number(query.minRating);
+  //     match.avgRating = { $gte: v };
+  //   }
 
-    const q = typeof query.q === 'string' ? query.q.trim() : '';
-    const withTextScore = q.length > 0;
-    if (withTextScore) {
-      match.$text = { $search: q };
-    }
+  //   const q = typeof query.q === 'string' ? query.q.trim() : '';
+  //   const withTextScore = q.length > 0;
+  //   if (withTextScore) {
+  //     match.$text = { $search: q };
+  //   }
 
-    const sort = withTextScore
-      ? {
-          score: { $meta: 'textScore' as const },
-          [sortField]: sortDir,
-          _id: sortDir,
-        }
-      : {
-          [sortField]: sortDir,
-          _id: sortDir,
-        };
+  //   const sort = withTextScore
+  //     ? {
+  //         score: { $meta: 'textScore' as const },
+  //         [sortField]: sortDir,
+  //         _id: sortDir,
+  //       }
+  //     : {
+  //         [sortField]: sortDir,
+  //         _id: sortDir,
+  //       };
 
-    const { docs } = await this.productsRepo.findMany({
-      match,
-      sort,
-      page,
-      limit,
-      withTextScore,
-      visibility,
+  //   const { docs } = await this.productsRepo.findMany({
+  //     match,
+  //     sort,
+  //     page,
+  //     limit,
+  //     withTextScore,
+  //     visibility,
+  //   });
+
+  //   return docs;
+  // }
+
+  async findMany(params: UserFindProductsDto): Promise<{
+    docs: ProductEntity[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    const { sortBy, sortOrder } = params;
+    const { categoryId, isNewProduct, isVegan, maxPrice, minPrice } = params;
+
+    const { docs, total } = await this.productsRepo.findMany({
+      page: page || 1,
+      limit: limit || 20,
+      sortKey: sortBy,
+      sortOrder,
+      filters: {
+        categoryId: categoryId,
+        isVegan: isVegan,
+        isNewProduct: isNewProduct,
+        priceMin: minPrice,
+        priceMax: maxPrice,
+        q: params.q,
+      },
     });
 
-    return docs;
+    return {
+      docs,
+      total,
+      page,
+      limit,
+    };
   }
 
   async exists(id: string): Promise<boolean> {

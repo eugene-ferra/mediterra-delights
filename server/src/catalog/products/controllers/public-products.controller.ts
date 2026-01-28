@@ -10,7 +10,7 @@ import { Response } from 'express';
 
 import { ProductsService } from '../products.service';
 import { ProductEntity } from '../../data/entities/product-entity.type';
-import { FindManyProductsQueryDto } from '../dto/find-many-products.dto';
+import { UserFindProductsDto } from '../dto/user-find-products.dto';
 
 @Controller('products')
 export class PublicProductsController {
@@ -19,14 +19,11 @@ export class PublicProductsController {
   @Get('/')
   async findMany(
     @Res({ passthrough: true }) res: Response,
-    @Query() query: FindManyProductsQueryDto,
+    @Query() query: UserFindProductsDto,
   ): Promise<ProductEntity[]> {
-    const docs = await this.productsService.findMany(query, {
-      includeInactiveCategories: false,
-      includeInactiveProducts: false,
-    });
+    const docs = await this.productsService.findMany(query);
 
-    return docs;
+    return docs.docs;
   }
 
   @Get('/:id')

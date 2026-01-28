@@ -20,7 +20,7 @@ import { UpdateProductDto } from '../dto/update-product.dto';
 import { AuthGuard } from 'src/common/guards/auth.guard';
 import { AdminGuard } from 'src/common/guards/admin.guard';
 import { ProductEntity } from '../../data/entities/product-entity.type';
-import { FindManyProductsQueryDto } from '../dto/find-many-products.dto';
+import { UserFindProductsDto } from '../dto/user-find-products.dto';
 
 @UseGuards(AuthGuard, AdminGuard)
 @Controller('admin/products')
@@ -30,14 +30,11 @@ export class AdminProductsController {
   @Get('/')
   async findMany(
     @Res({ passthrough: true }) res: Response,
-    @Query() query: FindManyProductsQueryDto,
+    @Query() query: UserFindProductsDto,
   ): Promise<ProductEntity[]> {
-    const docs = await this.productsService.findMany(query, {
-      includeInactiveCategories: true,
-      includeInactiveProducts: true,
-    });
+    const docs = await this.productsService.findMany(query);
 
-    return docs;
+    return docs.docs;
   }
 
   @Get('/:id')

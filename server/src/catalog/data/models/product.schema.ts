@@ -7,6 +7,9 @@ export type ProductDocument = HydratedDocument<Product>;
 
 @Schema({})
 export class Product {
+  @Prop()
+  _id!: Types.ObjectId;
+
   @Prop({ required: true, unique: true, trim: true })
   title!: string;
 
@@ -20,6 +23,9 @@ export class Product {
     index: true,
   })
   categoryId!: Types.ObjectId;
+
+  @Prop({ required: true })
+  isCategoryActive!: boolean;
 
   @Prop({ required: true, trim: true })
   description!: string;

@@ -12,7 +12,7 @@ import { Transform } from 'class-transformer';
 import { toNum } from 'src/common/ validators/to-num';
 import { toBool } from 'src/common/ validators/to-bool';
 
-export class FindManyProductsQueryDto {
+export class UserFindProductsDto {
   @IsOptional()
   @Transform(({ value }) => toNum(value))
   @IsInt()
@@ -57,11 +57,6 @@ export class FindManyProductsQueryDto {
   @Transform(({ value }) => toNum(value))
   @IsNumber()
   maxPrice?: number;
-
-  @IsOptional()
-  @Transform(({ value }) => toNum(value))
-  @IsNumber()
-  minRating?: number;
 
   @IsOptional()
   @IsString()

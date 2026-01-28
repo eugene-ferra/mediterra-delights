@@ -1,47 +1,36 @@
-import { SortOrder } from 'src/common/types/sort-order.type';
+type ProductFindQuery = {
+  filters?: {
+    q?: string;
+    categoryId?: string;
+    avgRatingMin?: number;
+    avgRatingMax?: number;
+    reviewCountMin?: number;
+    reviewCountMax?: number;
+    priceMin?: number;
+    priceMax?: number;
+    weightMin?: number;
+    weightMax?: number;
+    isVegan?: boolean;
+    isNewProduct?: boolean;
+    cookTimeMin?: number;
+    cookTimeMax?: number;
+    isActive?: boolean;
+    isCategoryActive?: boolean;
+  };
+  sortKey?:
+    | 'title'
+    | 'price'
+    | 'avgRating'
+    | 'reviewCount'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'cookTime'
+    | 'weight'
+    | 'isNewProduct'
+    | 'isVegan'
+    | 'isActive';
 
-export type ProductsVisibility = {
-  includeInactiveProducts: boolean;
-  includeInactiveCategories: boolean;
-};
-
-export type ProductsSortKey =
-  | 'createdAt'
-  | 'price'
-  | 'avgRating'
-  | 'reviewCount'
-  | 'title';
-
-export type FindManyProductsQuery = {
-  // pagination
-  page?: number; // default 1
-  limit?: number; // default 20, max 100
-
-  // sorting
-  sortBy?: ProductsSortKey; // default 'createdAt'
-  sortOrder?: SortOrder; // default 'desc'
-
-  // filters
-  categoryId?: string;
-  isVegan?: boolean;
-  isNewProduct?: boolean;
-
-  minPrice?: number;
-  maxPrice?: number;
-
-  minRating?: number;
-
-  // search
-  q?: string; // title/description/fullText
-
-  includeInactive?: boolean;
-};
-
-export type FindManyProductsDbQuery = {
-  match: Record<string, any>;
-  sort: Record<string, 1 | -1 | { $meta: 'textScore' }>;
+  sortOrder?: 'asc' | 'desc';
   page: number;
   limit: number;
-  withTextScore: boolean;
-  visibility: ProductsVisibility;
 };
