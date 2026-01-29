@@ -62,15 +62,27 @@ export class AdminProductsController {
     @Res({ passthrough: true }) res: Response,
     @Param('id') id: string,
     @Body() dto: UpdateProductDto,
-  ): Promise<{ updated: true } | null> {
-    return await this.productsService.updateById(id, dto);
+  ): Promise<ProductEntity> {
+    const product = await this.productsService.updateById(id, dto);
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return product;
   }
 
   @Delete('/:id')
   async deleteById(
     @Res({ passthrough: true }) res: Response,
     @Param('id') id: string,
-  ): Promise<{ deleted: true }> {
-    return this.productsService.deleteById(id);
+  ): Promise<ProductEntity> {
+    const doc = await this.productsService.deleteById(id);
+
+    if (!doc) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return doc;
   }
 }

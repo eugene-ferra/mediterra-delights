@@ -9,6 +9,11 @@ import {
   UpdateProductRecord,
 } from '../types/product.types';
 import { Category } from '../models/category.schema';
+import {
+  DuplicateKeyRepoError,
+  InvalidDataRepoError,
+  RepositoryUnknownError,
+} from 'src/common/errors/repository-errors';
 
 @Injectable()
 export class ProductsRepository {
@@ -97,11 +102,33 @@ export class ProductsRepository {
   }
 
   async create(data: CreateProductRecord): Promise<ProductEntity> {
-    const created = await this.productModel.create(data);
+    try {
+      if (!Types.ObjectId.isValid(data.categoryId)) {
+        throw new InvalidDataRepoError({ categoryId: 'Invalid ObjectId' });
+      }
 
-    const full = await created.populate<{ categoryId: Category }>('categoryId');
+      const categoryId = new Types.ObjectId(data.categoryId);
 
-    return this.toEntity(full);
+      const created = await this.productModel.create({ ...data, categoryId });
+
+      const full = await created.populate<{ categoryId: Category }>(
+        'categoryId',
+      );
+
+      return this.toEntity(full);
+    } catch (err: any) {
+      // Mongo duplicate key
+      if (err?.code === 11000) {
+        const keyValue = err?.keyValue ?? {};
+        throw new DuplicateKeyRepoError('products', keyValue);
+      }
+
+      if (err?.name === 'ValidationError') {
+        throw new InvalidDataRepoError(err.errors);
+      }
+
+      throw new RepositoryUnknownError(err);
+    }
   }
 
   async findById(id: string): Promise<ProductEntity | null> {
@@ -134,14 +161,37 @@ export class ProductsRepository {
   ): Promise<ProductEntity | null> {
     if (!Types.ObjectId.isValid(id)) return null;
 
-    const updatedDoc = await this.productModel
-      .findByIdAndUpdate(id, { ...data }, { new: true })
-      .populate<{ categoryId: Category }>('categoryId')
-      .exec();
+    if (
+      data.categoryId !== undefined &&
+      !Types.ObjectId.isValid(data.categoryId)
+    ) {
+      throw new InvalidDataRepoError({ categoryId: 'Invalid ObjectId' });
+    }
 
-    if (!updatedDoc) return null;
+    const categoryId = new Types.ObjectId(data.categoryId);
 
-    return this.toEntity(updatedDoc);
+    try {
+      const updatedDoc = await this.productModel
+        .findByIdAndUpdate(id, { ...data, categoryId }, { new: true })
+        .populate<{ categoryId: Category }>('categoryId')
+        .exec();
+
+      if (!updatedDoc) return null;
+
+      return this.toEntity(updatedDoc);
+    } catch (err: any) {
+      // Mongo duplicate key
+      if (err?.code === 11000) {
+        const keyValue = err?.keyValue ?? {};
+        throw new DuplicateKeyRepoError('products', keyValue);
+      }
+
+      if (err?.name === 'ValidationError') {
+        throw new InvalidDataRepoError(err.errors);
+      }
+
+      throw new RepositoryUnknownError(err);
+    }
   }
 
   async deleteById(id: string): Promise<ProductEntity | null> {

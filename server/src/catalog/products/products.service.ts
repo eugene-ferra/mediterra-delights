@@ -1,7 +1,6 @@
 import {
   ConflictException,
   Injectable,
-  NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import slugify from 'slugify';
@@ -13,6 +12,10 @@ import { ProductsRepository } from '../data/repositories/product.repository';
 import { CategoriesRepository } from '../data/repositories/category.repository';
 import { ProductEntity } from '../data/entities/product-entity.type';
 import { UserFindProductsDto } from './dto/user-find-products.dto';
+import {
+  DuplicateKeyRepoError,
+  InvalidDataRepoError,
+} from 'src/common/errors/repository-errors';
 
 @Injectable()
 export class ProductsService {
@@ -22,12 +25,6 @@ export class ProductsService {
   ) {}
 
   async create(data: CreateProductDto): Promise<ProductEntity> {
-    if (!this.categoriesRepo.isValidCategoryId(data.categoryId)) {
-      throw new UnprocessableEntityException(
-        'Provided category does not exist.',
-      );
-    }
-
     const category = await this.categoriesRepo.findById(data.categoryId);
     if (!category) {
       throw new UnprocessableEntityException(
@@ -36,30 +33,35 @@ export class ProductsService {
     }
 
     const slug = slugify(data.title, { lower: true, locale: 'en' });
-
-    if (await this.productsRepo.findBySlug(slug)) {
-      throw new ConflictException(
-        'It looks like product with such title already exists',
-      );
-    }
-
     const nutrients = data.nutrients || {};
 
-    let created;
+    try {
+      let created = await this.productsRepo.create({
+        ...data,
+        slug,
+        imgCover: {
+          originalKey: '', // to be updated later
+          originalWidth: 800,
+          originalHeight: 800,
+        },
+        nutrients,
+        isCategoryActive: category.isActive,
+      });
 
-    created = await this.productsRepo.create({
-      ...data,
-      slug,
-      imgCover: {
-        originalKey: '', // to be updated later
-        originalWidth: 800,
-        originalHeight: 800,
-      },
-      nutrients,
-      isCategoryActive: category.isActive,
-    });
+      return created;
+    } catch (err) {
+      if (err instanceof DuplicateKeyRepoError)
+        throw new ConflictException(
+          'It looks like product with such title already exists',
+        );
 
-    return created;
+      if (err instanceof InvalidDataRepoError)
+        throw new UnprocessableEntityException(
+          'It looks like provided data is invalid. Please check the data and try again.',
+        );
+
+      throw err;
+    }
   }
 
   async findOne(id: string): Promise<ProductEntity | null> {
@@ -73,7 +75,7 @@ export class ProductsService {
   async updateById(
     id: string,
     data: UpdateProductDto,
-  ): Promise<{ updated: true }> {
+  ): Promise<ProductEntity | null> {
     if (data.categoryId) {
       const isCategoryExist = await this.categoriesRepo.IsExist(
         data.categoryId,
@@ -88,18 +90,11 @@ export class ProductsService {
       ? slugify(data.title, { lower: true, locale: 'en' })
       : undefined;
 
-    if (slug) {
-      const existingProduct = await this.productsRepo.findBySlug(slug);
-      if (existingProduct && existingProduct.id !== id)
-        throw new ConflictException(
-          'It looks like product with such title already exists',
-        );
-    }
-
     if (data.discountPrice) {
       const product = await this.productsRepo.findById(id);
 
-      if (!product) throw new NotFoundException('Product to update not found');
+      // product to update not found
+      if (!product) return null;
 
       if (data.discountPrice >= product.price) {
         throw new UnprocessableEntityException(
@@ -108,101 +103,34 @@ export class ProductsService {
       }
     }
 
-    const updated = await this.productsRepo.updateById(id, { ...data, slug });
+    try {
+      const updated = await this.productsRepo.updateById(id, { ...data, slug });
 
-    if (!updated) throw new NotFoundException('Product to update not found');
+      if (!updated) return null;
 
-    return { updated: true };
+      return updated;
+    } catch (err) {
+      if (err instanceof DuplicateKeyRepoError)
+        throw new ConflictException(
+          'It looks like product with such title already exists',
+        );
+
+      if (err instanceof InvalidDataRepoError)
+        throw new UnprocessableEntityException(
+          'It looks like provided data is invalid. Please check the data and try again.',
+        );
+
+      throw err;
+    }
   }
 
-  async deleteById(id: string): Promise<{ deleted: true }> {
+  async deleteById(id: string): Promise<ProductEntity | null> {
     const deleted = await this.productsRepo.deleteById(id);
 
-    if (!deleted) throw new NotFoundException('Product not found');
+    if (!deleted) return null;
 
-    return { deleted: true };
+    return deleted;
   }
-
-  // async findMany(
-  //   query: FindManyProductsQueryDto = {},
-  //   visibility = {
-  //     includeInactiveProducts: false,
-  //     includeInactiveCategories: false,
-  //   },
-  // ): Promise<ProductEntity[]> {
-  //   const page = Math.max(1, Number(query.page ?? 1));
-  //   const limit = Math.min(100, Math.max(1, Number(query.limit ?? 20)));
-
-  //   const sortBy = query.sortBy ?? 'createdAt';
-  //   const sortOrder = query.sortOrder ?? 'desc';
-  //   const sortDir: 1 | -1 = sortOrder === 'asc' ? 1 : -1;
-
-  //   const sortFieldMap = {
-  //     createdAt: 'createdAt',
-  //     price: 'price',
-  //     avgRating: 'avgRating',
-  //     reviewCount: 'reviewCount',
-  //     title: 'title',
-  //   };
-  //   const sortField = sortFieldMap[sortBy];
-
-  //   const match: Record<string, any> = {};
-
-  //   if (!visibility.includeInactiveProducts) {
-  //     match.isActive = true;
-  //   }
-
-  //   if (query.categoryId) match.categoryId = query.categoryId;
-
-  //   if (typeof query.isVegan === 'boolean') match.isVegan = query.isVegan;
-  //   if (typeof query.isNewProduct === 'boolean')
-  //     match.isNewProduct = query.isNewProduct;
-
-  //   if (query.minPrice !== undefined || query.maxPrice !== undefined) {
-  //     match.price = {};
-  //     if (query.minPrice !== undefined) {
-  //       const v = Number(query.minPrice);
-  //       match.price.$gte = v;
-  //     }
-  //     if (query.maxPrice !== undefined) {
-  //       const v = Number(query.maxPrice);
-  //       match.price.$lte = v;
-  //     }
-  //   }
-
-  //   if (query.minRating !== undefined) {
-  //     const v = Number(query.minRating);
-  //     match.avgRating = { $gte: v };
-  //   }
-
-  //   const q = typeof query.q === 'string' ? query.q.trim() : '';
-  //   const withTextScore = q.length > 0;
-  //   if (withTextScore) {
-  //     match.$text = { $search: q };
-  //   }
-
-  //   const sort = withTextScore
-  //     ? {
-  //         score: { $meta: 'textScore' as const },
-  //         [sortField]: sortDir,
-  //         _id: sortDir,
-  //       }
-  //     : {
-  //         [sortField]: sortDir,
-  //         _id: sortDir,
-  //       };
-
-  //   const { docs } = await this.productsRepo.findMany({
-  //     match,
-  //     sort,
-  //     page,
-  //     limit,
-  //     withTextScore,
-  //     visibility,
-  //   });
-
-  //   return docs;
-  // }
 
   async findMany(params: UserFindProductsDto): Promise<{
     docs: ProductEntity[];
@@ -246,11 +174,14 @@ export class ProductsService {
     productId: string,
     avgRating: number,
     reviewCount: number,
-  ): Promise<{ updated: true }> {
-    await this.productsRepo.updateById(productId, {
+  ): Promise<ProductEntity | null> {
+    const product = await this.productsRepo.updateById(productId, {
       avgRating,
       reviewCount,
     });
-    return { updated: true };
+
+    if (!product) return null;
+
+    return product;
   }
 }
