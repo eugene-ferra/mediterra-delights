@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { AuthGuard } from 'src/common/guards/auth.guard';
 import { AdminGuard } from 'src/common/guards/admin.guard';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
+import { FindCategoriesDto } from '../dto/find-category.dto';
 
 @UseGuards(AuthGuard, AdminGuard)
 @Controller('admin/categories')
@@ -24,11 +26,10 @@ export class AdminCategoryController {
 
   @Get('/')
   async getAllCategories(
+    @Query() query: FindCategoriesDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<CategoryEntity[]> {
-    const categories = await this.categoryService.findAll({
-      includeInactive: true,
-    });
+    const categories = await this.categoryService.findAll(query);
     return categories;
   }
 
@@ -46,7 +47,7 @@ export class AdminCategoryController {
     @Res({ passthrough: true }) res: Response,
     @Body() updateCategoryDto: UpdateCategoryDto,
     @Param('id') id: string,
-  ): Promise<{ updated: true }> {
+  ): Promise<CategoryEntity> {
     const category = await this.categoryService.updateOne(
       id,
       updateCategoryDto,
@@ -58,7 +59,7 @@ export class AdminCategoryController {
   async deleteCategory(
     @Res({ passthrough: true }) res: Response,
     @Param('id') id: string,
-  ): Promise<{ deleted: true }> {
+  ): Promise<CategoryEntity> {
     const result = await this.categoryService.deleteById(id);
     return result;
   }

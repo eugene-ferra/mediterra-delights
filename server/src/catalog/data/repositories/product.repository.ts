@@ -253,8 +253,6 @@ export class ProductsRepository {
         .exec(),
     ]);
 
-    console.log('docs:', docs);
-
     return {
       docs: docs.map((d) => this.toEntity(d)),
       total,

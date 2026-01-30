@@ -10,6 +10,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CategoriesRepository } from '../data/repositories/category.repository';
 import { ProductsRepository } from '../data/repositories/product.repository';
+import { FindCategoriesDto } from './dto/find-category.dto';
 
 @Injectable()
 export class CategoryService {
@@ -18,11 +19,21 @@ export class CategoryService {
     private readonly productRepo: ProductsRepository,
   ) {}
 
-  async findAll(filter?: {
-    includeInactive?: boolean;
-  }): Promise<CategoryEntity[]> {
-    const categories = await this.categoryRepo.findAll(filter?.includeInactive);
-    return categories;
+  async findAll(params: FindCategoriesDto): Promise<CategoryEntity[]> {
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    const isActive = params.isActive;
+    const { sortBy, sortOrder } = params;
+
+    const categories = await this.categoryRepo.findAll({
+      filters: { isActive },
+      page,
+      limit,
+      sortKey: sortBy,
+      sortOrder: sortOrder,
+    });
+
+    return categories.docs;
   }
 
   async findOne(id: string): Promise<CategoryEntity | null> {
@@ -49,7 +60,7 @@ export class CategoryService {
   async updateOne(
     id: string,
     payload: UpdateCategoryDto,
-  ): Promise<{ updated: true }> {
+  ): Promise<CategoryEntity> {
     const slug = payload.title
       ? slugify(payload.title, { lower: true, locale: 'en' })
       : undefined;
@@ -71,7 +82,7 @@ export class CategoryService {
     return res;
   }
 
-  async deleteById(id: string): Promise<{ deleted: true }> {
+  async deleteById(id: string): Promise<CategoryEntity> {
     if (await this.productRepo.countByCategoryId(id)) {
       throw new UnprocessableEntityException(
         'This category has products assigned to it and cannot be deleted.',
